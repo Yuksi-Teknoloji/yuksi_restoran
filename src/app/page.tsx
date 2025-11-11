@@ -116,7 +116,7 @@ export default function AdminLoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-gray-700"
-              placeholder="admin@example.com"
+              placeholder="restaurant@example.com"
             />
           </div>
 
@@ -137,7 +137,7 @@ export default function AdminLoginPage() {
             disabled={loading}
             className="w-full py-2 px-4 bg-orange-600 text-white font-semibold rounded-lg shadow-md hover:bg-orange-700 transition disabled:opacity-60"
           >
-            {loading ? "Giriş yapılıyor..." : "Admin Giriş"}
+            {loading ? "Giriş yapılıyor..." : "Restoran Giriş"}
           </button>
         </form>
 
