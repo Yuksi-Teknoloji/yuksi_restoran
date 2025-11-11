@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  --foreground: #171717;
+  --background-color: #f97316; /* flat orange base */
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground: #ededed;
+    --background-color: #f97316;
+  }
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+
+  /* Concentric rings directly on body */
+  background-image: repeating-radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.15) 0px,
+    rgba(255, 255, 255, 0.15) 20px,
+    transparent 20px,
+    transparent 200px
+  );
+
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 200% 200%; /* slightly larger for subtle effect */
+
+  /* Continuous zoom without scroll */
+  animation: zoomRings 12s ease-in-out infinite;
+}
+
+@keyframes zoomRings {
+  0% {
+    background-size: 180% 180%;
+  }
+  50% {
+    background-size: 220% 220%;
+  }
+  100% {
+    background-size: 180% 180%;
+  }
+}
+
+@import "leaflet/dist/leaflet.css";
+
+/* küçük, emoji tabanlı marker */
+.leaflet-marker-div {
+  font-size: 20px;
+  line-height: 20px;
+}

@@ -1,0 +1,95 @@
+/* ---- Orange / Cream Satır Teması (genel) ---- */
+:root{
+  --soft-row-bg:     #fdf3eb;  /* krem-turuncu */
+  --soft-row-hover:  #fbe7d7;
+  --soft-border:     #f8d9b6;
+  --soft-sep:        #fae3c6;
+}
+
+/* Tüm tema .orange-ui içinde çalışır (layout’ta var) */
+.orange-ui :where(hr){
+  border-color: var(--soft-border);
+}
+
+/* 1) TABLE bazlı listeler */
+.orange-ui :where(table){
+  border-collapse: separate;
+  width: 100%;
+}
+.orange-ui :where(thead th){
+  background:#fff;
+  color:#0f172a;
+  font-weight:600;
+  border-bottom:2px solid var(--soft-border);
+}
+.orange-ui :where(tbody tr){
+  background:var(--soft-row-bg);
+}
+.orange-ui :where(tbody tr:hover){
+  background:var(--soft-row-hover);
+}
+.orange-ui :where(th, td){
+  border-top:1px solid var(--soft-border);
+}
+
+/* 2) UL/OL listeler */
+.orange-ui :where(ul>li, ol>li){
+  background:var(--soft-row-bg);
+  border-top:1px solid var(--soft-border);
+}
+.orange-ui :where(ul>li:hover, ol>li:hover){
+  background:var(--soft-row-hover);
+}
+
+/* 3) Tailwind divide-y ile ayrılmış satırlar */
+.orange-ui :where(.divide-y)> :where(*){
+  background:var(--soft-row-bg);
+}
+.orange-ui :where(.divide-y)> :where(*:hover){
+  background:var(--soft-row-hover);
+}
+/* divide çizgisi rengini yumuşat */
+.orange-ui :where(.divide-y)> :where(* + *){
+  border-top-color:var(--soft-border) !important;
+}
+
+/* 4) “div tabanlı satır” common pattern’leri yakala
+   - .item-row, .row, .list-item, .align-middle (sende sık kullanılıyor),
+   - border-t ile birbirini takip eden bloklar
+*/
+.orange-ui :where(.item-row, .row-item, .list-item, .align-middle){
+  background:var(--soft-row-bg);
+  border-top:1px solid var(--soft-border);
+}
+.orange-ui :where(.item-row:hover, .row-item:hover, .list-item:hover, .align-middle:hover){
+  background:var(--soft-row-hover);
+}
+
+/* ardışık bloklar (sıklıkla border-t ile ayırdığın satırlar) */
+.orange-ui :where(.border-t){
+  border-top-color:var(--soft-border) !important;
+}
+.orange-ui :where(.border-b){
+  border-bottom-color:var(--soft-border) !important;
+}
+
+/* 5) Kart/separator yardımcıları */
+.orange-ui .table-sep{
+  height:2px;
+  background:linear-gradient(90deg,transparent,var(--soft-sep),transparent);
+}
+.orange-ui .soft-card{
+  background:var(--soft-row-bg);
+  border:1px solid var(--soft-border);
+  border-radius:14px;
+}
+
+/* 6) Zorlayan yerler için tek satırlık opt-in:
+   wrapper’a .soft-row ekle → içteki her çocuk satır gibi görünür */
+.orange-ui .soft-row> *{
+  background:var(--soft-row-bg);
+  border-top:1px solid var(--soft-border);
+}
+.orange-ui .soft-row> *:hover{
+  background:var(--soft-row-hover);
+}
