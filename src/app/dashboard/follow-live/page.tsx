@@ -1,25 +1,37 @@
 // src/app/dashboard/follow-live/page.tsx
-'use client';
+"use client";
 
-import * as React from 'react';
-import dynamic from 'next/dynamic';
-import { Clock, Phone, RefreshCcw, Search, Menu, Pencil, Maximize2, MapPin } from 'lucide-react';
-import { getAuthToken } from '@/src/utils/auth';
+import * as React from "react";
+import dynamic from "next/dynamic";
+import {
+  Clock,
+  Phone,
+  RefreshCcw,
+  Search,
+  Menu,
+  Pencil,
+  Maximize2,
+  MapPin,
+  Minimize2,
+} from "lucide-react";
+import { getAuthToken } from "@/src/utils/auth";
 
 // Haritayı sadece client'ta renderla
-const LiveLeaflet = dynamic(() => import('@/src/components/map/LiveLeaflet'), { ssr: false });
+const LiveLeaflet = dynamic(() => import("@/src/components/map/LiveLeaflet"), {
+  ssr: false,
+});
 
 /* ================= Types ================= */
 type OrderStatus =
-  | 'hazirlaniyor'
-  | 'kurye_cagrildi'
-  | 'kuryeye_verildi'
-  | 'kuryeye_istek_atildi'
-  | 'kurye_reddetti'
-  | 'siparis_havuza_atildi'
-  | 'yolda'
-  | 'teslim_edildi'
-  | 'iptal';
+  | "hazirlaniyor"
+  | "kurye_cagrildi"
+  | "kuryeye_verildi"
+  | "kuryeye_istek_atildi"
+  | "kurye_reddetti"
+  | "siparis_havuza_atildi"
+  | "yolda"
+  | "teslim_edildi"
+  | "iptal";
 
 type ApiOrder = {
   id: string;
@@ -77,15 +89,15 @@ const pickMsg = (d: any, fb: string) =>
 // JWT -> payload decode (base64url)
 function decodeJwt<T = any>(token?: string | null): T | null {
   if (!token) return null;
-  const parts = token.split('.');
+  const parts = token.split(".");
   if (parts.length < 2) return null;
   try {
-    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     const json = decodeURIComponent(
       atob(b64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join(''),
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
     );
     return JSON.parse(json);
   } catch {
@@ -94,15 +106,23 @@ function decodeJwt<T = any>(token?: string | null): T | null {
 }
 
 const STATUS_TABS: { key: OrderStatus; label: string; color: TabColor }[] = [
-  { key: 'hazirlaniyor',          label: 'Hazırlanıyor',          color: 'sky' },
-  { key: 'kuryeye_istek_atildi',  label: 'Kuryeye İstek Atıldı',  color: 'emerald' },
-  { key: 'kurye_reddetti',        label: 'Kurye Reddetti',        color: 'rose' },
-  { key: 'kurye_cagrildi',        label: 'Kurye Çağrıldı',        color: 'amber' },
-  { key: 'kuryeye_verildi',       label: 'Kuryeye Verildi',       color: 'indigo' },
-  { key: 'siparis_havuza_atildi', label: 'Sipariş Havuza Atıldı', color: 'purple' },
-  { key: 'yolda',                 label: 'Yolda',                 color: 'blue' },
-  { key: 'teslim_edildi',         label: 'Teslim Edildi',         color: 'emerald' },
-  { key: 'iptal',                 label: 'İptal',                 color: 'rose' },
+  { key: "hazirlaniyor", label: "Hazırlanıyor", color: "sky" },
+  {
+    key: "kuryeye_istek_atildi",
+    label: "Kuryeye İstek Atıldı",
+    color: "emerald",
+  },
+  { key: "kurye_reddetti", label: "Kurye Reddetti", color: "rose" },
+  { key: "kurye_cagrildi", label: "Kurye Çağrıldı", color: "amber" },
+  { key: "kuryeye_verildi", label: "Kuryeye Verildi", color: "indigo" },
+  {
+    key: "siparis_havuza_atildi",
+    label: "Sipariş Havuza Atıldı",
+    color: "purple",
+  },
+  { key: "yolda", label: "Yolda", color: "blue" },
+  { key: "teslim_edildi", label: "Teslim Edildi", color: "emerald" },
+  { key: "iptal", label: "İptal", color: "rose" },
 ];
 
 function statusReadable(s: OrderStatus) {
@@ -116,16 +136,22 @@ export default function FollowLivePage() {
   const payload = React.useMemo(() => decodeJwt<any>(token), [token]);
   const restaurantId = payload?.userId as string | undefined;
 
-  const [q, setQ] = React.useState('');
+  const [q, setQ] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   const [orders, setOrders] = React.useState<Order[]>([]);
-  const [selectedOrderId, setSelectedOrderId] = React.useState<string | null>(null);
-  const [selectedStatus, setSelectedStatus] = React.useState<OrderStatus>('hazirlaniyor');
+  const [selectedOrderId, setSelectedOrderId] = React.useState<string | null>(
+    null
+  );
+  const [selectedStatus, setSelectedStatus] =
+    React.useState<OrderStatus>("hazirlaniyor");
+  const [maximizeMap, setMaximizeMap] = React.useState(false);
+
+  const sectionRef = React.useRef<HTMLElement>(null);
 
   const headers = React.useMemo<HeadersInit>(() => {
-    const h: HeadersInit = { Accept: 'application/json' };
+    const h: HeadersInit = { Accept: "application/json" };
     if (token) (h as any).Authorization = `Bearer ${token}`;
     return h;
   }, [token]);
@@ -134,70 +160,74 @@ export default function FollowLivePage() {
   const loadOrders = React.useCallback(
     async (status: OrderStatus) => {
       if (!restaurantId) {
-        setError('Restoran kimliği bulunamadı (token).');
+        setError("Restoran kimliği bulunamadı (token).");
         return;
       }
       setLoading(true);
       setError(null);
       try {
         const qs = new URLSearchParams();
-        qs.set('limit', '100');
-        qs.set('offset', '0');
-        qs.set('status', status); // swagger’daki status query’si
+        qs.set("limit", "100");
+        qs.set("offset", "0");
+        qs.set("status", status); // swagger’daki status query’si
 
         const res = await fetch(
           `/yuksi/restaurant/${restaurantId}/order-history?${qs.toString()}`,
-          { headers, cache: 'no-store' },
+          { headers, cache: "no-store" }
         );
         const j = await readJson(res);
         if (!res.ok || j?.success === false) {
           throw new Error(pickMsg(j, `HTTP ${res.status}`));
         }
 
-        const list: ApiOrder[] =
-          Array.isArray(j?.data?.orders) ? j.data.orders :
-          Array.isArray(j?.data) ? j.data :
-          Array.isArray(j) ? j : [];
+        const list: ApiOrder[] = Array.isArray(j?.data?.orders)
+          ? j.data.orders
+          : Array.isArray(j?.data)
+          ? j.data
+          : Array.isArray(j)
+          ? j
+          : [];
 
         const mapped: Order[] = list
           .map((o) => {
             const pickupLat =
-              o.pickup_lat != null && o.pickup_lat !== ''
+              o.pickup_lat != null && o.pickup_lat !== ""
                 ? Number(o.pickup_lat)
                 : null;
             const pickupLng =
-              o.pickup_lng != null && o.pickup_lng !== ''
+              o.pickup_lng != null && o.pickup_lng !== ""
                 ? Number(o.pickup_lng)
                 : null;
             const dropLat =
-              o.dropoff_lat != null && o.dropoff_lat !== ''
+              o.dropoff_lat != null && o.dropoff_lat !== ""
                 ? Number(o.dropoff_lat)
                 : null;
             const dropLng =
-              o.dropoff_lng != null && o.dropoff_lng !== ''
+              o.dropoff_lng != null && o.dropoff_lng !== ""
                 ? Number(o.dropoff_lng)
                 : null;
 
             // Öncelik: dropoff (teslimat noktası), yoksa pickup (restoran)
             const lat = dropLat ?? pickupLat;
             const lng = dropLng ?? pickupLng;
-            if (!Number.isFinite(lat as number) || !Number.isFinite(lng as number)) {
+            if (
+              !Number.isFinite(lat as number) ||
+              !Number.isFinite(lng as number)
+            ) {
               return null;
             }
 
             return {
               id: String(o.id),
-              code: o.code ?? '',
-              customer: o.customer ?? '',
-              phone: o.phone ?? '',
+              code: o.code ?? "",
+              customer: o.customer ?? "",
+              phone: o.phone ?? "",
               status: (o.status as OrderStatus) ?? status,
               address: o.address ?? null,
               delivery_address: o.delivery_address ?? null,
               type: o.type ?? null,
               amount:
-                o.amount != null && o.amount !== ''
-                  ? Number(o.amount)
-                  : null,
+                o.amount != null && o.amount !== "" ? Number(o.amount) : null,
               createdAt: o.created_at ?? null,
               pickupLat,
               pickupLng,
@@ -210,16 +240,20 @@ export default function FollowLivePage() {
           .filter((o): o is Order => !!o);
 
         setOrders(mapped);
-        setSelectedOrderId((prev) => prev && mapped.some((m) => m.id === prev) ? prev : mapped[0]?.id ?? null);
+        setSelectedOrderId((prev) =>
+          prev && mapped.some((m) => m.id === prev)
+            ? prev
+            : mapped[0]?.id ?? null
+        );
       } catch (e: any) {
-        setError(e?.message || 'Siparişler alınamadı.');
+        setError(e?.message || "Siparişler alınamadı.");
         setOrders([]);
         setSelectedOrderId(null);
       } finally {
         setLoading(false);
       }
     },
-    [headers, restaurantId],
+    [headers, restaurantId]
   );
 
   /* ------- İlk yükleme + status değişince yükle ------- */
@@ -234,11 +268,11 @@ export default function FollowLivePage() {
     return orders.filter((o) => {
       const code = o.code.toLowerCase();
       const cust = o.customer.toLowerCase();
-      const phone = (o.phone ?? '').replace(/\s/g, '').toLowerCase();
+      const phone = (o.phone ?? "").replace(/\s/g, "").toLowerCase();
       return (
         code.includes(qq) ||
         cust.includes(qq) ||
-        phone.includes(qq.replace(/\s/g, '').toLowerCase())
+        phone.includes(qq.replace(/\s/g, "").toLowerCase())
       );
     });
   }, [orders, q]);
@@ -249,8 +283,8 @@ export default function FollowLivePage() {
   // Leaflet için marker listesi
   const markers = filtered.map((o) => ({
     id: o.id,
-    name: o.code || o.customer || 'Sipariş',
-    phone: o.customer || o.phone || '',
+    name: o.code || o.customer || "Sipariş",
+    phone: o.customer || o.phone || "",
     lat: o.lat,
     lng: o.lng,
   }));
@@ -268,7 +302,7 @@ export default function FollowLivePage() {
                 Restoran: <b>{restaurantId}</b>
               </>
             ) : (
-              'Restoran kimliği bulunamadı'
+              "Restoran kimliği bulunamadı"
             )}
           </div>
           <button
@@ -278,33 +312,59 @@ export default function FollowLivePage() {
             title="Yenile"
           >
             <RefreshCcw className="h-4 w-4" />
-            {loading ? 'Yükleniyor…' : 'Siparişleri Yenile'}
+            {loading ? "Yükleniyor…" : "Siparişleri Yenile"}
           </button>
         </div>
       </div>
 
       {/* Harita + sağ panel */}
-      <section className="rounded-xl border border-neutral-200/70 bg-white shadow-sm overflow-hidden">
+      <section
+        ref={sectionRef}
+        className={"rounded-xl border border-neutral-200/70 bg-white shadow-sm"}
+      >
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px]">
           {/* Sol: Harita */}
-          <div className="relative">
+          <div className="relative h-max">
             <LiveLeaflet
               markers={markers}
               selectedId={sel?.id ?? null}
               onSelect={(id) => setSelectedOrderId(id)}
-              className="h-[calc(100vh-220px)] w-full"
+              className={`w-full ${
+                maximizeMap ? "h-screen" : "h-96 lg:h-[500px]"
+              } rounded-t-xl lg:rounded-t-none lg:rounded-l-xl`}
               overlay={
                 <>
                   {/* Sağ dikey buton grubu */}
                   <div className="pointer-events-auto absolute right-3 top-3 z-10 flex flex-col gap-2">
-                    <button className="grid h-10 w-10 place-items-center rounded-md bg-emerald-600 text-white shadow">
+                    <button
+                      title="Menü"
+                      className="grid h-10 w-10 place-items-center rounded-md bg-emerald-600 text-white shadow cursor-pointer"
+                    >
                       <Menu className="h-5 w-5" />
                     </button>
-                    <button className="grid h-10 w-10 place-items-center rounded-md bg-amber-500 text-white shadow">
+                    <button
+                      title="Düzenle"
+                      className="grid h-10 w-10 place-items-center rounded-md bg-amber-500 text-white shadow cursor-pointer"
+                    >
                       <Pencil className="h-5 w-5" />
                     </button>
-                    <button className="grid h-10 w-10 place-items-center rounded-md bg-neutral-700 text-white shadow">
-                      <Maximize2 className="h-5 w-5" />
+                    <button
+                      onClick={() => {
+                        if (maximizeMap) {
+                          document.exitFullscreen?.();
+                        } else {
+                          sectionRef.current?.requestFullscreen?.();
+                        }
+                        setMaximizeMap(!maximizeMap);
+                      }}
+                      title={maximizeMap ? "Küçült" : "Tam Ekran"}
+                      className="grid cursor-pointer h-10 w-10 place-items-center rounded-md bg-neutral-700 text-white shadow"
+                    >
+                      {maximizeMap ? (
+                        <Minimize2 className="h-5 w-5" />
+                      ) : (
+                        <Maximize2 className="h-5 w-5" />
+                      )}
                     </button>
                     <div className="grid h-10 min-w-10 place-items-center rounded-md bg-neutral-900 px-2 text-white shadow">
                       <span className="tabular-nums text-sm">
@@ -315,16 +375,13 @@ export default function FollowLivePage() {
 
                   {/* Sağ alt: rozetler */}
                   <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2">
-                    <div className="pointer-events-auto rounded-md bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
-                      Soket Bağlantısı: Bağlandı
-                    </div>
                     <div className="pointer-events-auto rounded-md bg-neutral-900/90 px-3 py-1.5 text-xs font-semibold text-white">
                       Listelenen Paket Sayısı: {filtered.length}
                     </div>
                   </div>
 
                   {/* Alt: durumlara göre butonlar (status filter) */}
-                  <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-10">
+                  <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-10 my-10">
                     <div className="mx-2 mb-2 grid grid-cols-3 gap-2 text-sm font-medium">
                       {STATUS_TABS.map((t) => (
                         <Tab
@@ -340,44 +397,7 @@ export default function FollowLivePage() {
                 </>
               }
             />
-
-            {/* Alt yatay sipariş listesi */}
-            <div className="overflow-x-auto border-t border-neutral-200/70 bg-white">
-              <div className="flex gap-3 px-4 py-3">
-                {filtered.map((o) => {
-                  const active = sel?.id === o.id;
-                  return (
-                    <button
-                      key={o.id}
-                      onClick={() => setSelectedOrderId(o.id)}
-                      className={`min-w-[260px] flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition ${
-                        active
-                          ? 'border-orange-300 bg-orange-50'
-                          : 'border-neutral-200 bg-white hover:bg-neutral-50'
-                      }`}
-                    >
-                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-neutral-900">
-                          #{o.code || o.id.slice(0, 8)}
-                        </div>
-                        <div className="text-xs text-neutral-500">
-                          {o.customer || 'Müşteri'} • {statusReadable(o.status)}
-                        </div>
-                      </div>
-                      <MapPin className="h-4 w-4 text-neutral-400" />
-                    </button>
-                  );
-                })}
-                {filtered.length === 0 && (
-                  <div className="px-4 py-2 text-sm text-neutral-500">
-                    Bu durum için sipariş bulunamadı.
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
-
           {/* Sağ: detay paneli */}
           <aside className="border-t lg:border-t-0 lg:border-l border-neutral-200/70 bg-white p-4 lg:p-6">
             {!sel ? (
@@ -392,7 +412,7 @@ export default function FollowLivePage() {
                       #{sel.code || sel.id.slice(0, 8)}
                     </div>
                     <div className="text-sm text-neutral-600">
-                      {sel.customer || 'Müşteri'}
+                      {sel.customer || "Müşteri"}
                     </div>
                     <div className="mt-1 text-xs text-neutral-500">
                       Durum: {statusReadable(sel.status)}
@@ -409,7 +429,7 @@ export default function FollowLivePage() {
                     {sel.phone ? (
                       <a
                         className="text-sky-600 hover:underline"
-                        href={`tel:${sel.phone.replace(/\s/g, '')}`}
+                        href={`tel:${sel.phone.replace(/\s/g, "")}`}
                       >
                         {sel.phone}
                       </a>
@@ -420,20 +440,17 @@ export default function FollowLivePage() {
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-neutral-500" />
                     <span className="text-neutral-700">
-                      Oluşturma:{' '}
+                      Oluşturma:{" "}
                       <b>
                         {sel.createdAt
-                          ? new Date(sel.createdAt).toLocaleString('tr-TR')
-                          : '—'}
+                          ? new Date(sel.createdAt).toLocaleString("tr-TR")
+                          : "—"}
                       </b>
                     </span>
                   </div>
                   {sel.amount != null && (
                     <div>
-                      Tutar:{' '}
-                      <b>
-                        {sel.amount.toFixed(2)} ₺
-                      </b>
+                      Tutar: <b>{sel.amount.toFixed(2)} ₺</b>
                     </div>
                   )}
                 </div>
@@ -443,22 +460,60 @@ export default function FollowLivePage() {
                     <div className="text-xs font-semibold text-neutral-500">
                       Restoran Adresi
                     </div>
-                    <div className="text-neutral-800">
-                      {sel.address || '—'}
-                    </div>
+                    <div className="text-neutral-800">{sel.address || "—"}</div>
                   </div>
                   <div>
                     <div className="text-xs font-semibold text-neutral-500">
                       Teslimat Adresi
                     </div>
                     <div className="text-neutral-800">
-                      {sel.delivery_address || '—'}
+                      {sel.delivery_address || "—"}
                     </div>
                   </div>
                 </div>
               </div>
             )}
           </aside>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-neutral-200/70 bg-white shadow-sm">
+        {/* Alt yatay sipariş listesi */}
+        {/* Tam ekran için sipariş listesini ayırdım */}
+        <div className="overflow-x-auto">
+          <div className="flex flex-wrap gap-3 px-4 py-3">
+            {/* görüntü bozulmasın diye wrap */}
+            {filtered.map((o) => {
+              const active = sel?.id === o.id;
+              return (
+                <button
+                  key={o.id}
+                  onClick={() => setSelectedOrderId(o.id)}
+                  className={`w-[150px] flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition ${
+                    active
+                      ? "border-orange-300 bg-orange-50"
+                      : "border-neutral-200 bg-white hover:bg-neutral-50"
+                  }`}
+                >
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-neutral-900">
+                      #{o.code || o.id.slice(0, 8)}
+                    </div>
+                    <div className="text-xs text-neutral-500">
+                      {o.customer || "Müşteri"} • {statusReadable(o.status)}
+                    </div>
+                  </div>
+                  <MapPin className="h-4 w-4 text-neutral-400" />
+                </button>
+              );
+            })}
+            {filtered.length === 0 && (
+              <div className="px-4 py-2 text-sm text-neutral-500">
+                Bu durum için sipariş bulunamadı.
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -499,7 +554,14 @@ export default function FollowLivePage() {
 }
 
 /* Alt şeritteki küçük buton komponenti */
-type TabColor = 'sky' | 'emerald' | 'amber' | 'rose' | 'purple' | 'blue' | 'indigo';
+type TabColor =
+  | "sky"
+  | "emerald"
+  | "amber"
+  | "rose"
+  | "purple"
+  | "blue"
+  | "indigo";
 
 function Tab({
   color,
@@ -513,13 +575,13 @@ function Tab({
   onClick?: () => void;
 }) {
   const colors: Record<TabColor, string> = {
-    sky: 'bg-sky-600',
-    emerald: 'bg-emerald-600',
-    amber: 'bg-amber-600',
-    rose: 'bg-rose-600',
-    purple: 'bg-purple-600',
-    blue: 'bg-blue-600',
-    indigo: 'bg-indigo-600',
+    sky: "bg-sky-600",
+    emerald: "bg-emerald-600",
+    amber: "bg-amber-600",
+    rose: "bg-rose-600",
+    purple: "bg-purple-600",
+    blue: "bg-blue-600",
+    indigo: "bg-indigo-600",
   };
   return (
     <button
@@ -527,7 +589,7 @@ function Tab({
       onClick={onClick}
       className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-white shadow text-xs sm:text-sm ${
         colors[color]
-      } ${active ? 'ring-2 ring-white/90 scale-[1.02]' : ''}`}
+      } ${active ? "ring-2 ring-white/90 scale-[1.02]" : ""}`}
     >
       <span className="text-sm leading-none">●</span>
       <span className="font-semibold">{label}</span>
