@@ -10,17 +10,20 @@ const MapPicker = dynamic(() => import('@/src/components/map/MapPicker'), { ssr:
 type DeliveryTypeUI = 'today' | 'appointment';
 type DeliveryTypeAPI = 'immediate' | 'scheduled';
 
-type ExtraServiceKey = 'fragile' | 'helpCarry' | 'returnTrip' | 'stairs' | 'insurance';
+// --- Extra services DTO (GET /api/admin/extra-services) ---
+type ExtraServiceDTO = {
+  id: string;
+  service_name: string;
+  price: number;
+  carrier_type: string;
+  created_at?: string;
+};
 
-const EXTRA_SERVICES: Record<
-  ExtraServiceKey,
-  { id: number; label: string; price: number }
-> = {
-  fragile: { id: 1, label: 'Kırılabilir / Özenli Taşıma', price: 50 },
-  helpCarry: { id: 2, label: 'Taşıma Yardımı', price: 100 },
-  returnTrip: { id: 3, label: 'Gidiş-Dönüş', price: 75 },
-  stairs: { id: 4, label: 'Kat Hizmeti (Asansörsüz)', price: 60 },
-  insurance: { id: 5, label: 'Sigorta', price: 120 },
+type ExtraServiceUI = {
+  id: string;
+  label: string;
+  price: number;
+  carrierType: string;
 };
 
 async function readJson<T = any>(res: Response): Promise<T> {
@@ -96,23 +99,12 @@ export default function CreateLoadPage() {
   const [coupon, setCoupon] = React.useState('');
   const [couponApplied, setCouponApplied] = React.useState<string | null>(null);
 
-  const [extras, setExtras] = React.useState<Record<ExtraServiceKey, boolean>>({
-    fragile: false,
-    helpCarry: false,
-    returnTrip: false,
-    stairs: false,
-    insurance: false,
-  });
+  // --- Ek hizmetler (backend’ten) ---
+  const [extraServices, setExtraServices] = React.useState<ExtraServiceUI[]>([]);
+  const [extrasSelected, setExtrasSelected] = React.useState<Record<string, boolean>>({});
+  const [extrasLoading, setExtrasLoading] = React.useState(false);
 
   const [basePrice, setBasePrice] = React.useState<number | ''>(''); // manuel taban ücret
-  const extrasTotal = React.useMemo(
-    () =>
-      (Object.keys(extras) as ExtraServiceKey[])
-        .filter((k) => extras[k])
-        .reduce((sum, k) => sum + EXTRA_SERVICES[k].price, 0),
-    [extras],
-  );
-  const computedTotal = Number(basePrice || 0) + extrasTotal;
 
   // !!! allowed: 'cash' | 'card' | 'transfer'
   const [payMethod, setPayMethod] = React.useState<'cash' | 'card' | 'transfer' | ''>('');
@@ -125,8 +117,82 @@ export default function CreateLoadPage() {
 
   const token = React.useMemo(getAuthToken, []);
 
-  function toggleExtra(key: ExtraServiceKey) {
-    setExtras((p) => ({ ...p, [key]: !p[key] }));
+  // Ek hizmetleri /api/admin/extra-services endpointinden çek
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadExtraServices() {
+      setExtrasLoading(true);
+      try {
+        const res = await fetch('/yuksi/admin/extra-services', {
+          cache: 'no-store',
+          headers: {
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const j: any = await readJson(res);
+        if (!res.ok || j?.success === false) {
+          throw new Error(pickMsg(j, `HTTP ${res.status}`));
+        }
+
+        const list: ExtraServiceDTO[] = Array.isArray(j?.data)
+          ? j.data
+          : Array.isArray(j)
+            ? j
+            : [];
+
+        if (cancelled) return;
+
+        const mapped: ExtraServiceUI[] = list.map((x) => ({
+          id: String(x.id),
+          label: x.service_name,
+          price: Number(x.price) || 0,
+          carrierType: x.carrier_type,
+        }));
+
+        setExtraServices(mapped);
+        // mevcut seçili state içine yeni id’leri ekle
+        setExtrasSelected((prev) => {
+          const next = { ...prev };
+          for (const s of mapped) {
+            if (next[s.id] === undefined) next[s.id] = false;
+          }
+          return next;
+        });
+      } catch (e: any) {
+        if (!cancelled) {
+          setErrMsg((prev) => prev || e?.message || 'Ek hizmetler yüklenemedi.');
+        }
+      } finally {
+        if (!cancelled) setExtrasLoading(false);
+      }
+    }
+
+    loadExtraServices();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // Şimdilik tüm ek hizmetleri göster (carrierType’a göre filtre yok)
+  const visibleExtras = React.useMemo(
+    () => extraServices,
+    [extraServices],
+  );
+
+  const extrasTotal = React.useMemo(
+    () =>
+      extraServices
+        .filter((s) => extrasSelected[s.id])
+        .reduce((sum, s) => sum + s.price, 0),
+    [extraServices, extrasSelected],
+  );
+
+  const computedTotal = Number(basePrice || 0) + extrasTotal;
+
+  function toggleExtra(id: string) {
+    setExtrasSelected((p) => ({ ...p, [id]: !p[id] }));
   }
   function applyCoupon() {
     if (coupon.trim()) setCouponApplied(coupon.trim());
@@ -159,13 +225,14 @@ export default function CreateLoadPage() {
       return;
     }
 
-    const extraServices = (Object.keys(extras) as ExtraServiceKey[])
-      .filter((k) => extras[k])
-      .map((k) => ({
-        serviceId: EXTRA_SERVICES[k].id,
-        name: EXTRA_SERVICES[k].label,
-        price: EXTRA_SERVICES[k].price,
-      }));
+    const selectedExtras = extraServices.filter((s) => extrasSelected[s.id]);
+
+    const extraServicesPayload = selectedExtras.map((s, index) => ({
+      // Backend int istediği için burada sıralı bir integer gönderiyoruz
+      serviceId: index + 1,
+      name: s.label,
+      price: s.price,
+    }));
 
     const pLat = Number(pickupLat),
       pLng = Number(pickupLng);
@@ -194,7 +261,7 @@ export default function CreateLoadPage() {
           : undefined,
       specialNotes: note || undefined,
       campaignCode: couponApplied || (coupon.trim() || undefined),
-      extraServices,
+      extraServices: extraServicesPayload,
       extraServicesTotal: extrasTotal,
       totalPrice: computedTotal,
       paymentMethod: payMethod, // 'cash' | 'card' | 'transfer'
@@ -231,12 +298,10 @@ export default function CreateLoadPage() {
       setNote('');
       setCoupon('');
       setCouponApplied(null);
-      setExtras({
-        fragile: false,
-        helpCarry: false,
-        returnTrip: false,
-        stairs: false,
-        insurance: false,
+      setExtrasSelected((prev) => {
+        const next: Record<string, boolean> = {};
+        for (const s of extraServices) next[s.id] = false;
+        return next;
       });
       setBasePrice('');
       setPayMethod('');
@@ -362,10 +427,10 @@ export default function CreateLoadPage() {
           value={
             pickupLat && pickupLng
               ? {
-                  lat: Number(pickupLat),
-                  lng: Number(pickupLng),
-                  address: pickup || undefined,
-                }
+                lat: Number(pickupLat),
+                lng: Number(pickupLng),
+                address: pickup || undefined,
+              }
               : null
           }
           onChange={(p) => {
@@ -381,10 +446,10 @@ export default function CreateLoadPage() {
           value={
             dropLat && dropLng
               ? {
-                  lat: Number(dropLat),
-                  lng: Number(dropLng),
-                  address: dropoff || undefined,
-                }
+                lat: Number(dropLat),
+                lng: Number(dropLng),
+                address: dropoff || undefined,
+              }
               : null
           }
           onChange={(p) => {
@@ -436,27 +501,44 @@ export default function CreateLoadPage() {
 
         {/* Ek Hizmetler */}
         <div className="mb-2 text-sm font-semibold">Ek Hizmetler</div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {(Object.keys(EXTRA_SERVICES) as ExtraServiceKey[]).map((k) => (
-            <label
-              key={k}
-              className="flex cursor-pointer items-center justify-between rounded-xl border border-neutral-200 px-3 py-2 hover:bg-neutral-50"
-            >
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={extras[k]}
-                  onChange={() => toggleExtra(k)}
-                  className="h-4 w-4"
-                />
-                <span className="text-sm">{EXTRA_SERVICES[k].label}</span>
-              </div>
-              <span className="text-sm font-semibold">
-                {EXTRA_SERVICES[k].price.toFixed(0)}₺
-              </span>
-            </label>
-          ))}
-        </div>
+
+        {extrasLoading && (
+          <div className="mb-2 text-sm text-neutral-500">
+            Ek hizmetler yükleniyor…
+          </div>
+        )}
+
+        {!extrasLoading && visibleExtras.length === 0 && (
+          <div className="mb-4 text-sm text-neutral-500">
+            Tanımlı ek hizmet bulunmuyor.
+          </div>
+        )}
+
+        {visibleExtras.length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleExtras.map((s) => (
+              <label
+                key={s.id}
+                className="flex cursor-pointer items-center justify-between rounded-xl border border-neutral-200 px-3 py-2 hover:bg-neutral-50"
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={!!extrasSelected[s.id]}
+                    onChange={() => toggleExtra(s.id)}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm">
+                    {s.label} ({s.carrierType})
+                  </span>
+                </div>
+                <span className="text-sm font-semibold">
+                  {s.price.toFixed(0)}₺
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
 
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <div>
