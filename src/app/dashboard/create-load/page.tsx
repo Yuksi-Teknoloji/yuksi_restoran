@@ -1,3 +1,4 @@
+// src/app/dashboards/[role]/restaurants/create-load/page.tsx
 'use client';
 
 import * as React from 'react';
@@ -24,6 +25,35 @@ type ExtraServiceUI = {
   label: string;
   price: number;
   carrierType: string;
+};
+
+// --- City prices DTO (GET /api/admin/city-prices) ---
+type CityPriceDTO = {
+  id: string;
+  route_name: string;
+  country_id: number;
+  state_id: number;
+  city_id: number;
+  courier_price: number;
+  minivan_price: number;
+  panelvan_price: number;
+  kamyonet_price: number;
+  kamyon_price: number;
+};
+
+type CityPriceUI = {
+  id: string;
+  label: string;
+  countryId: number;
+  stateId: number;
+  cityId: number;
+  stateName: string;
+  cityName: string;
+  courier: number;
+  minivan: number;
+  panelvan: number;
+  kamyonet: number;
+  kamyon: number;
 };
 
 async function readJson<T = any>(res: Response): Promise<T> {
@@ -74,6 +104,24 @@ function toTRTime(t: string) {
   return t || '';
 }
 
+// city-prices satırından, seçilen taşıyıcı tipine göre fiyatı çek
+function pickCityBasePrice(p: CityPriceUI | undefined, carrierType: string): number {
+  if (!p) return 0;
+  switch (carrierType) {
+    case 'courier':
+      return p.courier;
+    case 'minivan':
+      return p.minivan;
+    case 'panelvan':
+      return p.panelvan;
+    case 'truck':
+      // truck için kamyonet fiyatını baz aldım, istersen kamyon yaparsın
+      return p.kamyonet || p.kamyon;
+    default:
+      return 0;
+  }
+}
+
 /* ======= page ======= */
 export default function CreateLoadPage() {
   // UI state
@@ -84,15 +132,17 @@ export default function CreateLoadPage() {
   const [carrierType, setCarrierType] = React.useState('courier'); // swagger 'courier'
   const [carrierVehicle, setCarrierVehicle] = React.useState('motorcycle'); // 'motorcycle'
 
-  const [loadType, setLoadType] = React.useState(''); // UI etiketi, API’ye gönderilmeyecek
-
   const [pickup, setPickup] = React.useState('');
   const [pickupLat, setPickupLat] = React.useState<string>('');
   const [pickupLng, setPickupLng] = React.useState<string>('');
+  const [pickupCityName, setPickupCityName] = React.useState<string>('');
+  const [pickupStateName, setPickupStateName] = React.useState<string>('');
 
   const [dropoff, setDropoff] = React.useState('');
   const [dropLat, setDropLat] = React.useState<string>('');
   const [dropLng, setDropLng] = React.useState<string>('');
+  const [dropCityName, setDropCityName] = React.useState<string>('');
+  const [dropStateName, setDropStateName] = React.useState<string>('');
 
   const [note, setNote] = React.useState('');
 
@@ -104,7 +154,10 @@ export default function CreateLoadPage() {
   const [extrasSelected, setExtrasSelected] = React.useState<Record<string, boolean>>({});
   const [extrasLoading, setExtrasLoading] = React.useState(false);
 
-  const [basePrice, setBasePrice] = React.useState<number | ''>(''); // manuel taban ücret
+  // --- City prices (backend’ten) ---
+  const [cityPrices, setCityPrices] = React.useState<CityPriceUI[]>([]);
+  const [cityPricesLoading, setCityPricesLoading] = React.useState(false);
+  const [cityPricesError, setCityPricesError] = React.useState<string | null>(null);
 
   // !!! allowed: 'cash' | 'card' | 'transfer'
   const [payMethod, setPayMethod] = React.useState<'cash' | 'card' | 'transfer' | ''>('');
@@ -117,7 +170,7 @@ export default function CreateLoadPage() {
 
   const token = React.useMemo(getAuthToken, []);
 
-  // Ek hizmetleri /api/admin/extra-services endpointinden çek
+  /* --------- Ek Hizmetler --------- */
   React.useEffect(() => {
     let cancelled = false;
 
@@ -139,8 +192,8 @@ export default function CreateLoadPage() {
         const list: ExtraServiceDTO[] = Array.isArray(j?.data)
           ? j.data
           : Array.isArray(j)
-            ? j
-            : [];
+          ? j
+          : [];
 
         if (cancelled) return;
 
@@ -175,11 +228,146 @@ export default function CreateLoadPage() {
     };
   }, [token]);
 
-  // Şimdilik tüm ek hizmetleri göster (carrierType’a göre filtre yok)
-  const visibleExtras = React.useMemo(
-    () => extraServices,
-    [extraServices],
-  );
+  /* --------- City Prices (şehir bazlı taban ücret) --------- */
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadCityPrices() {
+      setCityPricesLoading(true);
+      setCityPricesError(null);
+      try {
+        // 1) city-prices listesi
+        const res = await fetch('/yuksi/admin/city-prices', {
+          cache: 'no-store',
+          headers: {
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const j: any = await readJson(res);
+        if (!res.ok || j?.success === false) {
+          throw new Error(pickMsg(j, `HTTP ${res.status}`));
+        }
+
+        const list: CityPriceDTO[] = Array.isArray(j?.data)
+          ? j.data
+          : Array.isArray(j)
+          ? j
+          : [];
+
+        if (cancelled) return;
+
+        // 2) hangi country/state id'leri var, topla
+        const countryIds = new Set<number>();
+        const stateIds = new Set<number>();
+
+        for (const x of list) {
+          if (Number.isFinite(Number(x.country_id))) countryIds.add(Number(x.country_id));
+          if (Number.isFinite(Number(x.state_id))) stateIds.add(Number(x.state_id));
+        }
+
+        // 3) stateMap: id -> name
+        const stateMap = new Map<number, string>();
+        await Promise.all(
+          Array.from(countryIds).map(async (cid) => {
+            const url = new URL('/yuksi/geo/states', location.origin);
+            url.searchParams.set('country_id', String(cid));
+            url.searchParams.set('limit', '500');
+            url.searchParams.set('offset', '0');
+            const r = await fetch(url.toString(), { cache: 'no-store' });
+            const d = await readJson(r);
+            if (r.ok) {
+              const arr: any[] = Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : [];
+              for (const s of arr) {
+                const sid = Number(s?.id);
+                const name = String(s?.name ?? '');
+                if (Number.isFinite(sid) && name) stateMap.set(sid, name);
+              }
+            }
+          }),
+        );
+
+        // 4) cityMap: id -> name
+        const cityMap = new Map<number, string>();
+        await Promise.all(
+          Array.from(stateIds).map(async (sid) => {
+            const url = new URL('/yuksi/geo/cities', location.origin);
+            url.searchParams.set('state_id', String(sid));
+            url.searchParams.set('limit', '1000');
+            url.searchParams.set('offset', '0');
+            const r = await fetch(url.toString(), { cache: 'no-store' });
+            const d = await readJson(r);
+            if (r.ok) {
+              const arr: any[] = Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : [];
+              for (const c of arr) {
+                const cid = Number(c?.id);
+                const name = String(c?.name ?? '');
+                if (Number.isFinite(cid) && name) cityMap.set(cid, name);
+              }
+            }
+          }),
+        );
+
+        if (cancelled) return;
+
+        // 5) UI modeli
+        const mapped: CityPriceUI[] = list.map((x) => ({
+          id: String(x.id),
+          label: String(x.route_name ?? ''),
+          countryId: Number(x.country_id),
+          stateId: Number(x.state_id),
+          cityId: Number(x.city_id),
+          stateName: stateMap.get(Number(x.state_id)) ?? '',
+          cityName: cityMap.get(Number(x.city_id)) ?? '',
+          courier: Number(x.courier_price ?? 0),
+          minivan: Number(x.minivan_price ?? 0),
+          panelvan: Number(x.panelvan_price ?? 0),
+          kamyonet: Number(x.kamyonet_price ?? 0),
+          kamyon: Number(x.kamyon_price ?? 0),
+        }));
+
+        setCityPrices(mapped);
+      } catch (e: any) {
+        if (!cancelled) setCityPricesError(e?.message || 'Şehir fiyatları alınamadı.');
+      } finally {
+        if (!cancelled) setCityPricesLoading(false);
+      }
+    }
+
+    loadCityPrices();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  /* --------- pickup/dropoff + carrierType → base price eşleştirme --------- */
+  const basePrice = React.useMemo(() => {
+    if (!cityPrices.length) return 0;
+
+    const city = (dropCityName || pickupCityName || '').toLowerCase().trim();
+    const state = (dropStateName || pickupStateName || '').toLowerCase().trim();
+
+    if (!city || !state) return 0;
+
+    let match: CityPriceUI | undefined = cityPrices.find(
+      (p) =>
+        p.cityName.toLowerCase() === city &&
+        p.stateName.toLowerCase() === state,
+    );
+
+    if (!match) {
+      match = cityPrices.find((p) => p.cityName.toLowerCase() === city);
+    }
+
+    return pickCityBasePrice(match, carrierType);
+  }, [
+    cityPrices,
+    carrierType,
+    pickupCityName,
+    pickupStateName,
+    dropCityName,
+    dropStateName,
+  ]);
 
   const extrasTotal = React.useMemo(
     () =>
@@ -189,7 +377,7 @@ export default function CreateLoadPage() {
     [extraServices, extrasSelected],
   );
 
-  const computedTotal = Number(basePrice || 0) + extrasTotal;
+  const computedTotal = basePrice + extrasTotal;
 
   function toggleExtra(id: string) {
     setExtrasSelected((p) => ({ ...p, [id]: !p[id] }));
@@ -225,6 +413,14 @@ export default function CreateLoadPage() {
       return;
     }
 
+    // basePrice hiçbir şekilde elle girilmedi; eşleşme yoksa göndermeyelim
+    if (!basePrice || basePrice <= 0) {
+      setErrMsg(
+        'Seçilen şehir/ilçe ve taşıyıcı tipi için city-prices tablosunda fiyat bulunamadı. Lütfen önce admin panelinden fiyat tanımlayın.',
+      );
+      return;
+    }
+
     const selectedExtras = extraServices.filter((s) => extrasSelected[s.id]);
 
     const extraServicesPayload = selectedExtras.map((s, index) => ({
@@ -234,37 +430,36 @@ export default function CreateLoadPage() {
       price: s.price,
     }));
 
-    const pLat = Number(pickupLat),
-      pLng = Number(pickupLng);
-    const dLat = Number(dropLat),
-      dLng = Number(dropLng);
+    const pLatNum = Number(pickupLat),
+      pLngNum = Number(pickupLng);
+    const dLatNum = Number(dropLat),
+      dLngNum = Number(dropLng);
 
     const deliveryDate =
       deliveryTypeApi === 'scheduled' ? (toTRDate(schedDate) || null) : null;
     const deliveryTime =
       deliveryTypeApi === 'scheduled' ? (toTRTime(schedTime) || null) : null;
 
-    // ---> loadType API'ye GÖNDERİLMİYOR <---
     const body = {
       deliveryType: deliveryTypeApi,
       carrierType,
       vehicleType: carrierVehicle,
       pickupAddress: pickup,
       pickupCoordinates:
-        Number.isFinite(pLat) && Number.isFinite(pLng)
-          ? ([pLat, pLng] as [number, number])
+        Number.isFinite(pLatNum) && Number.isFinite(pLngNum)
+          ? ([pLatNum, pLngNum] as [number, number])
           : undefined,
       dropoffAddress: dropoff,
       dropoffCoordinates:
-        Number.isFinite(dLat) && Number.isFinite(dLng)
-          ? ([dLat, dLng] as [number, number])
+        Number.isFinite(dLatNum) && Number.isFinite(dLngNum)
+          ? ([dLatNum, dLngNum] as [number, number])
           : undefined,
       specialNotes: note || undefined,
       campaignCode: couponApplied || (coupon.trim() || undefined),
       extraServices: extraServicesPayload,
       extraServicesTotal: extrasTotal,
       totalPrice: computedTotal,
-      paymentMethod: payMethod, // 'cash' | 'card' | 'transfer'
+      paymentMethod: payMethod,
       imageFileIds: [],
 
       // randevu alanları (immediate ise null)
@@ -292,9 +487,13 @@ export default function CreateLoadPage() {
       setPickup('');
       setPickupLat('');
       setPickupLng('');
+      setPickupCityName('');
+      setPickupStateName('');
       setDropoff('');
       setDropLat('');
       setDropLng('');
+      setDropCityName('');
+      setDropStateName('');
       setNote('');
       setCoupon('');
       setCouponApplied(null);
@@ -303,7 +502,6 @@ export default function CreateLoadPage() {
         for (const s of extraServices) next[s.id] = false;
         return next;
       });
-      setBasePrice('');
       setPayMethod('');
       setFiles([]);
       setSchedDate('');
@@ -427,35 +625,38 @@ export default function CreateLoadPage() {
           value={
             pickupLat && pickupLng
               ? {
-                lat: Number(pickupLat),
-                lng: Number(pickupLng),
-                address: pickup || undefined,
-              }
+                  lat: Number(pickupLat),
+                  lng: Number(pickupLng),
+                  address: pickup || undefined,
+                }
               : null
           }
-          onChange={(p) => {
+          onChange={(p: any) => {
             setPickupLat(String(p.lat));
             setPickupLng(String(p.lng));
             if (p.address) setPickup(p.address);
+            if (p.cityName) setPickupCityName(String(p.cityName));
+            if (p.stateName) setPickupStateName(String(p.stateName));
           }}
         />
 
         {/* === TESLİMAT (DROPOFF) === */}
         <MapPicker
           label="Teslimat Konumu"
-          value={
-            dropLat && dropLng
+          value=
+            {dropLat && dropLng
               ? {
-                lat: Number(dropLat),
-                lng: Number(dropLng),
-                address: dropoff || undefined,
-              }
-              : null
-          }
-          onChange={(p) => {
+                  lat: Number(dropLat),
+                  lng: Number(dropLng),
+                  address: dropoff || undefined,
+                }
+              : null}
+          onChange={(p: any) => {
             setDropLat(String(p.lat));
             setDropLng(String(p.lng));
             if (p.address) setDropoff(p.address);
+            if (p.cityName) setDropCityName(String(p.cityName));
+            if (p.stateName) setDropStateName(String(p.stateName));
           }}
         />
 
@@ -503,20 +704,18 @@ export default function CreateLoadPage() {
         <div className="mb-2 text-sm font-semibold">Ek Hizmetler</div>
 
         {extrasLoading && (
-          <div className="mb-2 text-sm text-neutral-500">
-            Ek hizmetler yükleniyor…
-          </div>
+          <div className="mb-2 text-sm text-neutral-500">Ek hizmetler yükleniyor…</div>
         )}
 
-        {!extrasLoading && visibleExtras.length === 0 && (
+        {!extrasLoading && extraServices.length === 0 && (
           <div className="mb-4 text-sm text-neutral-500">
             Tanımlı ek hizmet bulunmuyor.
           </div>
         )}
 
-        {visibleExtras.length > 0 && (
+        {extraServices.length > 0 && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {visibleExtras.map((s) => (
+            {extraServices.map((s) => (
               <label
                 key={s.id}
                 className="flex cursor-pointer items-center justify-between rounded-xl border border-neutral-200 px-3 py-2 hover:bg-neutral-50"
@@ -542,18 +741,22 @@ export default function CreateLoadPage() {
 
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <div>
-            <label className="mb-1 block text-sm font-semibold">Taban Ücret (₺)</label>
-            <input
-              type="number"
-              min={0}
-              value={basePrice}
-              onChange={(e) =>
-                setBasePrice(
-                  e.target.value === '' ? '' : Math.max(0, Number(e.target.value)),
-                )
-              }
-              className="w-full rounded-xl border border-neutral-300 bg-neutral-100 px-3 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-sky-200"
-            />
+            <label className="mb-1 block text-sm font-semibold">
+              Taban Ücret (şehir/ilçe + araç tipine göre)
+            </label>
+            <div className="w-full rounded-xl border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-neutral-900">
+              {cityPricesLoading
+                ? 'Şehir fiyatları yükleniyor…'
+                : basePrice > 0
+                ? `${basePrice}₺`
+                : cityPricesError
+                ? `Hata: ${cityPricesError}`
+                : 'Şehir/ilçe ve taşıyıcı tipine göre fiyat bulunamadı.'}
+            </div>
+            <div className="mt-1 text-xs text-neutral-500">
+              Bu değer admin panelindeki <code>city-prices</code> tablosundan otomatik
+              hesaplanır, elle değiştirilemez.
+            </div>
           </div>
           <div className="self-end text-sm">
             <div>

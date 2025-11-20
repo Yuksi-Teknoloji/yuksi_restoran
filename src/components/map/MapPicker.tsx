@@ -6,7 +6,31 @@ import dynamic from 'next/dynamic';
 
 const RLMap = dynamic(() => import('./RLMap'), { ssr: false });
 
-export type GeoPoint = { lat: number; lng: number; address?: string };
+export type GeoPoint = {
+  lat: number;
+  lng: number;
+  address?: string;
+  cityName?: string;   // OSM’den çıkarılan şehir/ilçe adı
+  stateName?: string;  // OSM’den çıkarılan il/province adı
+};
+
+function extractCityState(addr: any) {
+  const city =
+    addr?.city ||
+    addr?.town ||
+    addr?.village ||
+    addr?.municipality ||
+    addr?.suburb ||
+    '';
+
+  const state =
+    addr?.province ||
+    addr?.state ||
+    addr?.region ||
+    '';
+
+  return { cityName: city, stateName: state };
+}
 
 export default function MapPicker({
   label = 'Konum',
@@ -45,9 +69,17 @@ export default function MapPicker({
       const arr = (await res.json()) as any[];
       if (arr?.length) {
         const r = arr[0];
-        const lat = Number(r.lat), lng = Number(r.lon);
+        const lat = Number(r.lat);
+        const lng = Number(r.lon);
+        const { cityName, stateName } = extractCityState(r.address || {});
         setCenter([lat, lng]); // haritayı buraya uçur
-        onChange({ lat, lng, address: r.display_name });
+        onChange({
+          lat,
+          lng,
+          address: r.display_name,
+          cityName,
+          stateName,
+        });
       }
     } finally {
       setBusy(false);
@@ -62,7 +94,14 @@ export default function MapPicker({
       url.searchParams.set('lon', String(lng));
       const res = await fetch(url.toString(), { headers: { 'Accept-Language': 'tr' } });
       const j = await res.json();
-      onChange({ lat, lng, address: j?.display_name });
+      const { cityName, stateName } = extractCityState(j?.address || {});
+      onChange({
+        lat,
+        lng,
+        address: j?.display_name,
+        cityName,
+        stateName,
+      });
     } finally {
       setCenter([lat, lng]); // tıklanan konuma uçar
     }
@@ -79,7 +118,12 @@ export default function MapPicker({
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); search(); } }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  search();
+                }
+              }}
               placeholder="Adres ara (cadde/mahalle, il/ilçe)…"
               className="w-full bg-neutral-100 px-3 py-2 outline-none"
             />
@@ -96,8 +140,12 @@ export default function MapPicker({
         <div className="min-w-[160px] text-right text-xs text-neutral-500">
           {value?.lat && value?.lng ? (
             <>
-              <div>Lat: <b>{value.lat.toFixed(6)}</b></div>
-              <div>Lng: <b>{value.lng.toFixed(6)}</b></div>
+              <div>
+                Lat: <b>{value.lat.toFixed(6)}</b>
+              </div>
+              <div>
+                Lng: <b>{value.lng.toFixed(6)}</b>
+              </div>
             </>
           ) : (
             <div>Haritaya tıkla veya ara</div>
@@ -110,7 +158,8 @@ export default function MapPicker({
 
       {value?.address && (
         <div className="text-sm text-neutral-700">
-          <span className="font-medium">Adres: </span>{value.address}
+          <span className="font-medium">Adres: </span>
+          {value.address}
         </div>
       )}
     </div>
