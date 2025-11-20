@@ -2,7 +2,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { type JwtClaims, decodeJwt } from "@/src/utils/jwt";
+import { getAuthToken } from "@/src/utils/auth";
 
+const token = getAuthToken();
+const claims: JwtClaims | null = token ? (decodeJwt(token) as JwtClaims) : null;
+const exp = claims && claims.exp ? claims.exp : undefined;
 
 export default function Header({
   title,
@@ -21,7 +26,8 @@ export default function Header({
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+      if (menuRef.current && !menuRef.current.contains(e.target as Node))
+        setOpen(false);
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -58,7 +64,9 @@ export default function Header({
 
     try {
       const refreshToken =
-        localStorage.getItem("refresh_token") || getCookie("refresh_token") || "";
+        localStorage.getItem("refresh_token") ||
+        getCookie("refresh_token") ||
+        "";
 
       // elde JWT varsa Authorization header ekleyelim
       const bearer =
@@ -76,6 +84,12 @@ export default function Header({
       }).catch(() => {
         /* ağ hatası olsa bile aşağıda temizleyeceğiz */
       });
+
+      await fetch("/api/auth/set-cookie", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, exp }),
+      }).catch(() => {});
     } finally {
       clientCleanup();
       window.location.href = "/"; // ana sayfa
@@ -90,11 +104,13 @@ export default function Header({
       ].join(" ")}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <h1 className={["text-lg font-semibold", titleClass].join(" ")}>{title}</h1>
+        <h1 className={["text-lg font-semibold", titleClass].join(" ")}>
+          {title}
+        </h1>
 
         <div className="relative" ref={menuRef}>
           <button
-          type="button" 
+            type="button"
             onClick={() => setOpen((s) => !s)}
             className="flex items-center gap-3 rounded-lg px-2 py-1 hover:bg-white/10"
             title={userLabel}
@@ -106,7 +122,7 @@ export default function Header({
           {open && (
             <div className="absolute right-0 mt-2 w-44 rounded-xl border border-neutral-200 bg-white text-neutral-800 shadow-lg">
               <button
-              type="button"
+                type="button"
                 onClick={handleLogout}
                 disabled={loggingOut}
                 className="w-full px-3 py-2 text-left rounded-t-xl hover:bg-neutral-50 disabled:opacity-60"

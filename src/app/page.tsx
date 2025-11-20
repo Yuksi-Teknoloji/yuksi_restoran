@@ -3,29 +3,45 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { decodeJwt, isExpired, roleSegment, type JwtClaims } from "@/src/utils/jwt";
+import {
+  decodeJwt,
+  isExpired,
+  roleSegment,
+  type JwtClaims,
+} from "@/src/utils/jwt";
 
 function extractToken(raw: any): string | null {
   if (!raw) return null;
   if (typeof raw === "string") {
     if (raw.split(".").length === 3) return raw;
-    try { return extractToken(JSON.parse(raw)); } catch { return null; }
+    try {
+      return extractToken(JSON.parse(raw));
+    } catch {
+      return null;
+    }
   }
+
   return (
     raw.token ||
+    raw.access_token ||
     raw.accessToken ||
     raw.jwt ||
     raw?.data?.accessToken ||
+    raw?.data?.token ||
+    raw?.result?.accessToken ||
+    raw?.result?.token ||
     null
   );
 }
 
 function persistToken(token: string, exp?: number) {
-  try { localStorage.setItem('auth_token', token); } catch {}
-  document.cookie = `auth_token=${token}; Path=/; SameSite=Lax`;
-  fetch('/api/auth/set-cookie', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  try {
+    localStorage.setItem("auth_token", token);
+  } catch {}
+
+  fetch("/api/auth/set-cookie", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token, exp }),
   }).catch(() => {});
 }
@@ -37,13 +53,13 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
     setLoading(true);
 
     try {
-      const res = await fetch('/yuksi/Auth/login', {
+      const res = await fetch("/yuksi/Auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -51,10 +67,16 @@ export default function AdminLoginPage() {
 
       const rawText = await res.text();
       let data: any = null;
-      try { data = rawText ? JSON.parse(rawText) : null; } catch { data = rawText; }
+      try {
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        data = rawText;
+      }
 
       if (!res.ok) {
-        const msg = (typeof data === "object" && (data?.message || data?.error)) || "Giriş başarısız.";
+        const msg =
+          (typeof data === "object" && (data?.message || data?.error)) ||
+          "Giriş başarısız.";
         setErr(msg);
         return;
       }
@@ -75,15 +97,42 @@ export default function AdminLoginPage() {
         return;
       }
 
-      const userRole = String(roleSegment(claims.userType) || "").toLowerCase();
+      let userRole = String(roleSegment(claims.userType) || "").toLowerCase().trim();
 
-      // sadece admin
+      if (!userRole) {
+        const firstRole = Array.isArray(data?.data?.roles) ? data.data.roles[0] : undefined;
+        userRole = firstRole.toLowerCase().trim();
+      }
+
+      if (!userRole) {
+        const anyClaimRole =
+          (claims as any).role ||
+          (claims as any)["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+        userRole = anyClaimRole.toLowerCase().trim();
+      }
+
       if (userRole !== "restaurant") {
         setErr("Bu panele sadece restoran erişebilir.");
         return;
       }
 
       persistToken(token, claims.exp);
+
+      
+      const refreshToken =
+        data?.refreshToken ||
+        data?.data?.refreshToken ||
+        data?.result?.refreshToken;
+
+      if (refreshToken) {
+        try {
+          localStorage.setItem("refresh_token", refreshToken);
+        } catch {}
+        // istersen cookie de yazabilirsin
+        document.cookie = `refresh_token=${encodeURIComponent(
+          refreshToken
+        )}; Path=/; SameSite=Lax`;
+      }
 
       router.replace("/dashboard");
     } catch {
@@ -109,7 +158,9 @@ export default function AdminLoginPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
             <input
               type="email"
               value={email}
@@ -121,7 +172,9 @@ export default function AdminLoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Şifre
+            </label>
             <input
               type="password"
               value={password}

@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "CircularStd";
+  font-style: normal;
+  font-weight: 500;
+  src: url("/fonts/circular-std-medium-500.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root {
   --foreground: #171717;
   --background-color: #f97316; /* flat orange base */
@@ -16,7 +24,8 @@
 body {
   background-color: var(--background-color);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "CircularStd", "Inter", system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* Concentric rings directly on body */
   background-image: repeating-radial-gradient(
