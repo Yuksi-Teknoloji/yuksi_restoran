@@ -104,7 +104,13 @@ function toTRTime(t: string) {
   return t || '';
 }
 
-// city-prices satırından, seçilen taşıyıcı tipine göre fiyatı çek
+const toNum = (v: unknown) => {
+  if (typeof v === 'number') return v;
+  const n = Number(String(v).replace(',', '.'));
+  return Number.isFinite(n) ? n : 0;
+};
+
+// city-prices satırından, seçilen taşıyıcı tipine göre km fiyatı çek
 function pickCityBasePrice(p: CityPriceUI | undefined, carrierType: string): number {
   if (!p) return 0;
   switch (carrierType) {
@@ -120,6 +126,19 @@ function pickCityBasePrice(p: CityPriceUI | undefined, carrierType: string): num
     default:
       return 0;
   }
+}
+
+// Haversine mesafe hesabı (km) — lat/lng OSM’den geliyor
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // km
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 /* ======= page ======= */
@@ -228,7 +247,7 @@ export default function CreateLoadPage() {
     };
   }, [token]);
 
-  /* --------- City Prices (şehir bazlı taban ücret) --------- */
+  /* --------- City Prices (şehir bazlı km fiyatı) --------- */
   React.useEffect(() => {
     let cancelled = false;
 
@@ -340,8 +359,26 @@ export default function CreateLoadPage() {
     };
   }, [token]);
 
-  /* --------- pickup/dropoff + carrierType → base price eşleştirme --------- */
-  const basePrice = React.useMemo(() => {
+  /* --------- pickup/dropoff → mesafe km --------- */
+  const distanceKm = React.useMemo(() => {
+    if (!pickupLat || !pickupLng || !dropLat || !dropLng) return 0;
+    const lat1 = toNum(pickupLat);
+    const lon1 = toNum(pickupLng);
+    const lat2 = toNum(dropLat);
+    const lon2 = toNum(dropLng);
+    if (
+      !Number.isFinite(lat1) ||
+      !Number.isFinite(lon1) ||
+      !Number.isFinite(lat2) ||
+      !Number.isFinite(lon2)
+    ) {
+      return 0;
+    }
+    return haversineKm(lat1, lon1, lat2, lon2);
+  }, [pickupLat, pickupLng, dropLat, dropLng]);
+
+  /* --------- city + carrierType → km başı fiyat & base price --------- */
+  const baseKmPrice = React.useMemo(() => {
     if (!cityPrices.length) return 0;
 
     const city = (dropCityName || pickupCityName || '').toLowerCase().trim();
@@ -368,6 +405,11 @@ export default function CreateLoadPage() {
     dropCityName,
     dropStateName,
   ]);
+
+  const basePrice = React.useMemo(() => {
+    if (!distanceKm || !baseKmPrice) return 0;
+    return Math.round(distanceKm * baseKmPrice);
+  }, [distanceKm, baseKmPrice]);
 
   const extrasTotal = React.useMemo(
     () =>
@@ -416,7 +458,7 @@ export default function CreateLoadPage() {
     // basePrice hiçbir şekilde elle girilmedi; eşleşme yoksa göndermeyelim
     if (!basePrice || basePrice <= 0) {
       setErrMsg(
-        'Seçilen şehir/ilçe ve taşıyıcı tipi için city-prices tablosunda fiyat bulunamadı. Lütfen önce admin panelinden fiyat tanımlayın.',
+        'Seçilen şehir/ilçe, taşıyıcı tipi veya mesafe için fiyat hesaplanamadı. Lütfen önce admin panelinden city-prices tanımlayın ve adres/konumları kontrol edin.',
       );
       return;
     }
@@ -643,14 +685,15 @@ export default function CreateLoadPage() {
         {/* === TESLİMAT (DROPOFF) === */}
         <MapPicker
           label="Teslimat Konumu"
-          value=
-            {dropLat && dropLng
+          value={
+            dropLat && dropLng
               ? {
                   lat: Number(dropLat),
                   lng: Number(dropLng),
                   address: dropoff || undefined,
                 }
-              : null}
+              : null
+          }
           onChange={(p: any) => {
             setDropLat(String(p.lat));
             setDropLng(String(p.lng));
@@ -742,20 +785,23 @@ export default function CreateLoadPage() {
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <div>
             <label className="mb-1 block text-sm font-semibold">
-              Taban Ücret (şehir/ilçe + araç tipine göre)
+              Taban Ücret (mesafe × km fiyatı)
             </label>
             <div className="w-full rounded-xl border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-neutral-900">
               {cityPricesLoading
                 ? 'Şehir fiyatları yükleniyor…'
                 : basePrice > 0
-                ? `${basePrice}₺`
+                ? `${basePrice}₺` +
+                  (distanceKm && baseKmPrice
+                    ? ` (≈ ${distanceKm.toFixed(1)} km × ${baseKmPrice.toFixed(0)}₺/km)`
+                    : '')
                 : cityPricesError
                 ? `Hata: ${cityPricesError}`
-                : 'Şehir/ilçe ve taşıyıcı tipine göre fiyat bulunamadı.'}
+                : 'Şehir/ilçe, taşıyıcı tipi veya mesafe için fiyat bulunamadı.'}
             </div>
             <div className="mt-1 text-xs text-neutral-500">
-              Bu değer admin panelindeki <code>city-prices</code> tablosundan otomatik
-              hesaplanır, elle değiştirilemez.
+              Km başı fiyat admin panelindeki <code>city-prices</code> tablosundan,
+              mesafe ise haritadaki pickup/dropoff konumları üzerinden otomatik hesaplanır.
             </div>
           </div>
           <div className="self-end text-sm">
