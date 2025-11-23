@@ -320,7 +320,7 @@ export default function FollowLivePage() {
       {/* Harita + sağ panel */}
       <section
         ref={sectionRef}
-        className={"rounded-xl border border-neutral-200/70 bg-white shadow-sm overflow-auto"}
+        className={"rounded-xl border border-neutral-200/70 bg-white shadow-sm"}
       >
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px]">
           {/* Sol: Harita */}
