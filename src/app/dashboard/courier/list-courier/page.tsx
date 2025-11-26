@@ -905,7 +905,7 @@ function PoolModal({
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="absolute left-1/2 top-12 w-[min(1024px,96vw)] -translate-x-1/2 rounded-2xl bg-white shadow-xl ring-1 ring-black/5 overflow-hidden max-h-[85vh]">
+      <div className="absolute left-1/2 top-12 w-[min(1024px,96vw)] -translate-x-1/2 rounded-2xl bg-white shadow-xl ring-1 ring-black/5 max-h-[85vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between border-b px-5 py-3">
           <div className="flex items-center gap-2">
             <Inbox className="h-5 w-5 text-orange-600" />
@@ -933,7 +933,7 @@ function PoolModal({
         {loading && <div className="p-5 text-sm text-neutral-500">Yükleniyor…</div>}
         {error && <div className="m-5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
 
-        <div className="p-5 overflow-auto">
+        <div className="flex-1 overflow-auto">
           <table className="min-w-full table-fixed">
             <thead>
               <tr className="text-left text-xs text-neutral-500">
