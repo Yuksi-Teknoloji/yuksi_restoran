@@ -331,7 +331,7 @@ export default function RestaurantJobsPage() {
             Yenile
           </button>
           <Link
-            href={`/dashboards/${role}/restaurants/create-load`}
+            href={`/dashboard/create-load`}
             className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-orange-700"
           >
             Yeni Yük
