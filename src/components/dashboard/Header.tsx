@@ -323,6 +323,22 @@ export default function Header({
                               className="mt-1 h-2.5 w-2.5 rounded-full bg-indigo-500 shrink-0 opacity-90"
                               style={{ visibility: isUnread ? "visible" : "hidden" }}
                             />
+                            {/* LOGO (yuvarlak + tamamen doldursun) */}
+                            {n.logo_uri ? (
+                              <div className="h-12 w-12 rounded-full overflow-hidden shrink-0 bg-white border border-neutral-200">
+                                <img
+                                  src={n.logo_uri}
+                                  alt={`${n.title || "notification"} logo`}
+                                  className="h-full w-full object-cover"
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer"
+                                />
+                              </div>
+                            ) : (
+                              <div className="h-12 w-12 rounded-full shrink-0 bg-neutral-100 border border-neutral-200 flex items-center justify-center text-xs text-neutral-500">
+                                🏷️
+                              </div>
+                            )}
                             <div className="min-w-0">
                               <div className="text-sm font-semibold text-neutral-900 truncate">
                                 {n.title || "(Başlıksız)"}
