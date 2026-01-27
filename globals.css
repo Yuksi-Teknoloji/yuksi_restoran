@@ -24,7 +24,7 @@
 body {
   background-color: var(--background-color);
   color: var(--foreground);
-  font-family: "CircularStd", "Inter", system-ui, -apple-system, "Segoe UI",
+  font-family: var(--font-nunito), "Nunito", system-ui, -apple-system, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* Concentric rings directly on body */

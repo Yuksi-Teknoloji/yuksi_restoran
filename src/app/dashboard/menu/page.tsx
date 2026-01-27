@@ -237,7 +237,7 @@ export default function RestaurantMenusPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Menü ara… (ad, bilgi, id)"
-              className="w-72 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 pl-8 text-sm outline-none focus:ring-2 focus:ring-sky-200"
+              className="w-full sm:w-72 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 pl-8 text-sm outline-none focus:ring-2 focus:ring-sky-200"
             />
             <Search className="pointer-events-none absolute left-2 top-1.5 h-4 w-4 text-neutral-400" />
           </div>
@@ -302,7 +302,8 @@ export default function RestaurantMenusPage() {
 
       {/* Table */}
       <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm">
-        <div className="max-h-[560px] overflow-auto">
+        {/* Tablo (desktop) */}
+        <div className="max-h-[560px] overflow-auto hidden sm:block">
           <table className="min-w-full">
             <thead>
               <tr className="text-left text-xs text-neutral-500">
@@ -352,6 +353,53 @@ export default function RestaurantMenusPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Kart görünümü (mobil) */}
+        <div className="sm:hidden max-h-[560px] overflow-auto px-4 py-3 space-y-3">
+          {menusFiltered.map((m) => (
+            <div key={m.id} className="rounded-xl border border-neutral-200/70 p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-medium text-neutral-900">{m.name}</div>
+                  <div className="text-[11px] text-neutral-500">{m.id}</div>
+                </div>
+                {m.price != null && (
+                  <span className="shrink-0 rounded-lg bg-emerald-50 px-2 py-1 text-sm font-semibold text-emerald-700">
+                    {m.price} ₺
+                  </span>
+                )}
+              </div>
+
+              {m.info && <div className="text-sm text-neutral-600">{m.info}</div>}
+
+              {m.image_url && (
+                <a className="text-xs text-sky-700 underline" href={m.image_url} target="_blank">
+                  Görseli Aç
+                </a>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => openEdit(m.id)}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs hover:bg-neutral-50"
+                >
+                  <Pencil className="h-4 w-4" /> Düzenle
+                </button>
+                <button
+                  onClick={() => removeMenu(m.id)}
+                  disabled={removingId === m.id}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-rose-700 disabled:opacity-60"
+                >
+                  {removingId === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Sil
+                </button>
+              </div>
+            </div>
+          ))}
+          {menusFiltered.length === 0 && (
+            <div className="py-6 text-center text-sm text-neutral-500">Kayıt yok.</div>
+          )}
+        </div>
+
         {loading && <div className="px-4 py-2 text-xs text-neutral-500">Yükleniyor…</div>}
         {error && (
           <div className="m-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -362,9 +410,9 @@ export default function RestaurantMenusPage() {
 
       {/* Edit modal */}
       {editId && (
-        <div className="fixed inset-0 z-40 grid place-items-center bg-black/40 p-4" onClick={() => setEditId(null)}>
+        <div className="fixed inset-0 z-40 grid place-items-center bg-black/40 p-2 sm:p-4" onClick={() => setEditId(null)}>
           <div
-            className="w-full max-w-lg overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xl"
+            className="w-full max-w-lg overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xl max-h-[92vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="border-b px-4 py-3 font-semibold">Menü Düzenle</div>

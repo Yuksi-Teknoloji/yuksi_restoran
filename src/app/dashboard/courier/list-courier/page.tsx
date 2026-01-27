@@ -532,7 +532,7 @@ export default function AddOrderCourierPage() {
                 value={poolMsg}
                 onChange={(e) => setPoolMsg(e.target.value)}
                 placeholder="Örn: Yakın kurye lazım"
-                className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm w-64"
+                className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm w-full sm:w-64"
               />
               <button
                 onClick={poolCreate}
@@ -566,15 +566,15 @@ export default function AddOrderCourierPage() {
 
       {/* Siparişler */}
       <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm">
-        <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
           <div className="font-semibold">Siparişler</div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
               <input
                 value={qOrder}
                 onChange={(e) => setQOrder(e.target.value)}
                 placeholder="Ara… (kod, durum, ID)"
-                className="w-56 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 pl-8 text-sm outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full sm:w-56 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 pl-8 text-sm outline-none focus:ring-2 focus:ring-sky-200"
               />
               <Search className="pointer-events-none absolute left-2 top-1.5 h-4 w-4 text-neutral-400" />
             </div>
@@ -588,7 +588,8 @@ export default function AddOrderCourierPage() {
             </button>
           </div>
         </div>
-        <div className="max-h-[360px] overflow-auto">
+        {/* Tablo (desktop) */}
+        <div className="max-h-[360px] overflow-auto hidden sm:block">
           <table className="min-w-full">
             <thead>
               <tr className="text-left text-xs text-neutral-500">
@@ -626,6 +627,32 @@ export default function AddOrderCourierPage() {
             </tbody>
           </table>
         </div>
+        {/* Kart (mobil) */}
+        <div className="sm:hidden max-h-[360px] overflow-auto px-4 py-3 space-y-2">
+          {ordersFiltered.map((o: OrderItem) => {
+            const isSel = selectedOrderId === o.id;
+            return (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => setSelectedOrderId(o.id)}
+                className={`w-full text-left rounded-xl border p-3 text-sm transition ${isSel ? 'border-sky-400 bg-sky-50/60 ring-2 ring-sky-200' : 'border-neutral-200/70'}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{o.code ? `#${o.code}` : o.id}</span>
+                  <span className="text-xs text-neutral-500">{o.status ?? '—'}</span>
+                </div>
+                <div className="mt-1 flex items-center justify-between text-xs text-neutral-500">
+                  <span>{fmtDT(o.created_at)}</span>
+                  <span>{o.total != null ? `${o.total} ₺` : '—'}</span>
+                </div>
+              </button>
+            );
+          })}
+          {ordersFiltered.length === 0 && (
+            <div className="py-6 text-center text-sm text-neutral-500">Kayıt yok.</div>
+          )}
+        </div>
         {ordersLoading && <div className="px-4 py-2 text-xs text-neutral-500">Yükleniyor…</div>}
         {ordersError && <div className="m-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{ordersError}</div>}
       </section>
@@ -633,15 +660,15 @@ export default function AddOrderCourierPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Aktif Kuryeler (genel) */}
         <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm">
-          <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
-            <div className="font-semibold">Aktif Kuryeler (Tümü)</div>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+            <div className="font-semibold text-sm sm:text-base">Aktif Kuryeler (Tümü)</div>
+            <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
                 <input
                   value={qActive}
                   onChange={(e) => setQActive(e.target.value)}
                   placeholder="Kurye ara…"
-                  className="w-48 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 pl-8 text-sm outline-none focus:ring-2 focus:ring-sky-200"
+                  className="w-full sm:w-48 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 pl-8 text-sm outline-none focus:ring-2 focus:ring-sky-200"
                 />
                 <Search className="pointer-events-none absolute left-2 top-1.5 h-4 w-4 text-neutral-400" />
               </div>
@@ -651,11 +678,12 @@ export default function AddOrderCourierPage() {
                 title="Yenile"
               >
                 <RefreshCcw className="h-4 w-4" />
-                Yenile
+                <span className="hidden sm:inline">Yenile</span>
               </button>
             </div>
           </div>
-          <div className="max-h-[360px] overflow-auto">
+          {/* Tablo (desktop) */}
+          <div className="max-h-[360px] overflow-auto hidden sm:block">
             <table className="min-w-full">
               <thead>
                 <tr className="text-left text-xs text-neutral-500">
@@ -692,21 +720,45 @@ export default function AddOrderCourierPage() {
               </tbody>
             </table>
           </div>
+          {/* Kart (mobil) */}
+          <div className="sm:hidden max-h-[360px] overflow-auto px-4 py-3 space-y-2">
+            {activeCouriersFiltered.map((c: CourierItem) => {
+              const name = [c.first_name, c.last_name].filter(Boolean).join(' ') || 'İsimsiz';
+              const isWorking = assigningTo === c.id;
+              return (
+                <div key={c.id} className="rounded-xl border border-neutral-200/70 p-3 space-y-2">
+                  <div className="font-medium text-sm">{name}</div>
+                  <div className="text-xs text-neutral-500">{c.phone ?? '—'}</div>
+                  <button
+                    onClick={() => assignToCourier(c.id)}
+                    disabled={isWorking || !selectedOrderId}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-orange-700 disabled:opacity-60"
+                  >
+                    {isWorking ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserRoundCheck className="h-4 w-4" />}
+                    Siparişi Ata
+                  </button>
+                </div>
+              );
+            })}
+            {activeCouriersFiltered.length === 0 && (
+              <div className="py-6 text-center text-sm text-neutral-500">Kayıt yok.</div>
+            )}
+          </div>
           {activeCouriersLoading && <div className="px-4 py-2 text-xs text-neutral-500">Yükleniyor…</div>}
           {activeCouriersError && <div className="m-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{activeCouriersError}</div>}
         </section>
 
         {/* Restorana Ekli Kuryeler (GPS) */}
         <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm">
-          <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
-            <div className="font-semibold">Restorana Ekli Kuryeler</div>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+            <div className="font-semibold text-sm sm:text-base">Restorana Ekli Kuryeler</div>
+            <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
                 <input
                   value={qRest}
                   onChange={(e) => setQRest(e.target.value)}
                   placeholder="Kurye ara…"
-                  className="w-48 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 pl-8 text-sm outline-none focus:ring-2 focus:ring-sky-200"
+                  className="w-full sm:w-48 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 pl-8 text-sm outline-none focus:ring-2 focus:ring-sky-200"
                 />
                 <Search className="pointer-events-none absolute left-2 top-1.5 h-4 w-4 text-neutral-400" />
               </div>
@@ -716,11 +768,12 @@ export default function AddOrderCourierPage() {
                 title="Yenile"
               >
                 <RefreshCcw className="h-4 w-4" />
-                Yenile
+                <span className="hidden sm:inline">Yenile</span>
               </button>
             </div>
           </div>
-          <div className="max-h=[360px] overflow-auto">
+          {/* Tablo (desktop) */}
+          <div className="max-h-[360px] overflow-auto hidden sm:block">
             <table className="min-w-full">
               <thead>
                 <tr className="text-left text-xs text-neutral-500">
@@ -764,6 +817,36 @@ export default function AddOrderCourierPage() {
               </tbody>
             </table>
           </div>
+          {/* Kart (mobil) */}
+          <div className="sm:hidden max-h-[360px] overflow-auto px-4 py-3 space-y-2">
+            {restCouriersFiltered.map((r: RestaurantCourierRow) => {
+              const name = [r.first_name, r.last_name].filter(Boolean).join(' ') || r.courier_id;
+              const isWorking = assigningTo === r.courier_id;
+              return (
+                <div key={r.assignment_id} className="rounded-xl border border-neutral-200/70 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium text-sm">{name}</div>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-700">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      {fmtDT(r.assigned_at)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-neutral-500">{r.phone ?? '—'}</div>
+                  <button
+                    onClick={() => assignToCourier(r.courier_id)}
+                    disabled={isWorking || !selectedOrderId}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-orange-700 disabled:opacity-60"
+                  >
+                    {isWorking ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserRoundCheck className="h-4 w-4" />}
+                    Siparişi Ata
+                  </button>
+                </div>
+              );
+            })}
+            {restCouriersFiltered.length === 0 && (
+              <div className="py-6 text-center text-sm text-neutral-500">Kayıt yok.</div>
+            )}
+          </div>
           {restCouriersLoading && <div className="px-4 py-2 text-xs text-neutral-500">Yükleniyor…</div>}
           {restCouriersError && <div className="m-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{restCouriersError}</div>}
         </section>
@@ -771,15 +854,15 @@ export default function AddOrderCourierPage() {
 
       {/* NEW: Yakındaki Kuryeler (10 km) */}
       <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-          <div className="font-semibold">Yakındaki Kuryeler (≤ 10 km, aktif & online)</div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b px-4 py-3">
+          <div className="font-semibold text-sm sm:text-base">Yakındaki Kuryeler (≤ 10 km, aktif & online)</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-0 sm:flex-none">
               <input
                 value={qNearby}
                 onChange={(e) => setQNearby(e.target.value)}
                 placeholder="Kurye ara…"
-                className="w-48 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full sm:w-48 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 pl-8 text-sm outline-none focus:ring-2 focus:ring-sky-200"
               />
               <Search className="pointer-events-none absolute left-2 top-1.5 h-4 w-4 text-neutral-400" />
             </div>
@@ -789,8 +872,8 @@ export default function AddOrderCourierPage() {
               max={200}
               value={nearbyLimit}
               onChange={(e) => setNearbyLimit(e.target.value === '' ? '' : Number(e.target.value))}
-              placeholder="Limit (ops.)"
-              className="w-28 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-sky-200"
+              placeholder="Limit"
+              className="w-20 sm:w-28 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-sky-200"
               title="Maksimum kurye sayısı (opsiyonel)"
             />
             <button
@@ -799,11 +882,12 @@ export default function AddOrderCourierPage() {
               title="Yenile"
             >
               <RefreshCcw className="h-4 w-4" />
-              Yenile
+              <span className="hidden sm:inline">Yenile</span>
             </button>
           </div>
         </div>
-        <div className="max-h-[360px] overflow-auto">
+        {/* Tablo (desktop) */}
+        <div className="max-h-[360px] overflow-auto hidden sm:block">
           <table className="min-w-full">
             <thead>
               <tr className="text-left text-xs text-neutral-500">
@@ -843,6 +927,35 @@ export default function AddOrderCourierPage() {
               )}
             </tbody>
           </table>
+        </div>
+        {/* Kart (mobil) */}
+        <div className="sm:hidden max-h-[360px] overflow-auto px-4 py-3 space-y-2">
+          {nearbyCouriersFiltered.map((c: NearbyCourierItem) => {
+            const name = [c.first_name, c.last_name].filter(Boolean).join(' ') || 'İsimsiz';
+            const isWorking = assigningTo === c.id;
+            return (
+              <div key={c.id} className="rounded-xl border border-neutral-200/70 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="font-medium text-sm">{name}</div>
+                  <span className="text-xs text-neutral-500">
+                    {typeof c.distance_km === 'number' ? `${c.distance_km.toFixed(2)} km` : '—'}
+                  </span>
+                </div>
+                <div className="text-xs text-neutral-500">{c.phone ?? '—'}</div>
+                <button
+                  onClick={() => assignToCourier(c.id)}
+                  disabled={isWorking || !selectedOrderId}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-orange-700 disabled:opacity-60"
+                >
+                  {isWorking ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserRoundCheck className="h-4 w-4" />}
+                  Siparişi Ata
+                </button>
+              </div>
+            );
+          })}
+          {nearbyCouriersFiltered.length === 0 && (
+            <div className="py-6 text-center text-sm text-neutral-500">Kayıt yok.</div>
+          )}
         </div>
         {nearbyLoading && <div className="px-4 py-2 text-xs text-neutral-500">Yükleniyor…</div>}
         {nearbyError && <div className="m-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{nearbyError}</div>}
@@ -905,7 +1018,7 @@ function PoolModal({
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="absolute left-1/2 top-12 w-[min(1024px,96vw)] -translate-x-1/2 rounded-2xl bg-white shadow-xl ring-1 ring-black/5 max-h-[85vh] flex flex-col overflow-hidden">
+      <div className="absolute inset-x-2 top-4 sm:inset-x-auto sm:left-1/2 sm:top-12 sm:w-[min(1024px,96vw)] sm:-translate-x-1/2 rounded-2xl bg-white shadow-xl ring-1 ring-black/5 max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between border-b px-5 py-3">
           <div className="flex items-center gap-2">
             <Inbox className="h-5 w-5 text-orange-600" />
@@ -933,7 +1046,8 @@ function PoolModal({
         {loading && <div className="p-5 text-sm text-neutral-500">Yükleniyor…</div>}
         {error && <div className="m-5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
 
-        <div className="flex-1 overflow-auto">
+        {/* Tablo (desktop) */}
+        <div className="flex-1 overflow-auto hidden sm:block">
           <table className="min-w-full table-fixed">
             <thead>
               <tr className="text-left text-xs text-neutral-500">
@@ -987,6 +1101,40 @@ function PoolModal({
               )}
             </tbody>
           </table>
+        </div>
+        {/* Kart (mobil) */}
+        <div className="sm:hidden flex-1 overflow-auto px-4 py-3 space-y-3">
+          {items.map((it) => (
+            <div key={it.order_id} className="rounded-xl border border-neutral-200/70 p-3 space-y-2 text-sm">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-mono text-[12px] break-all">{it.order_id}</div>
+                  <div className="text-xs text-neutral-500">{it.order_code ? `#${it.order_code}` : '—'}</div>
+                </div>
+                <button
+                  onClick={() => onDelete(it.order_id)}
+                  className="shrink-0 inline-flex items-center gap-1 rounded-md bg-rose-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-rose-700"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Sil
+                </button>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span>{it.order_status ?? '—'} · {it.order_type ?? '—'}</span>
+                <span className="text-neutral-500">{fmtDT(it.order_created_at)}</span>
+              </div>
+              {it.delivery_address && <div className="text-xs text-neutral-600">{it.delivery_address}</div>}
+              {it.message && (
+                <div className="rounded border border-neutral-200 bg-neutral-50 px-2 py-1 text-[11px] text-neutral-700">{it.message}</div>
+              )}
+              <div className="text-xs text-neutral-500">
+                {it.customer_name || '—'} · {it.customer_phone || '—'}
+              </div>
+            </div>
+          ))}
+          {items.length === 0 && !loading && (
+            <div className="py-6 text-center text-sm text-neutral-500">Havuzda kayıt yok.</div>
+          )}
         </div>
       </div>
     </div>

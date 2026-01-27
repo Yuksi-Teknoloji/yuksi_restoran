@@ -328,7 +328,7 @@ export default function CourierRatingsPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-2xl font-semibold tracking-tight">Kurye Puanları</h1>
 
-        <div className="hidden md:flex items-center gap-2 text-sm text-neutral-500">
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
           <SortButton
             active={sortKey === 'avg'} asc={sortAsc}
             onClick={() => { setSortKey('avg'); setSortAsc(k => !k); }}
@@ -356,7 +356,7 @@ export default function CourierRatingsPage() {
       <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm soft-card overflow-hidden">
         {/* Filtreler */}
         <div className="px-4 lg:px-6 py-4 sm:py-6">
-          <div className="grid items-end gap-4 md:grid-cols-[minmax(240px,1fr)_220px_200px]">
+          <div className="grid items-end gap-4 grid-cols-1 md:grid-cols-[minmax(240px,1fr)_220px_200px]">
             <div>
               <label className="mb-1 block text-sm font-semibold text-neutral-700">Kurye / Telefon</label>
               <div className="relative">
@@ -395,8 +395,8 @@ export default function CourierRatingsPage() {
           </div>
         </div>
 
-        {/* Tablo */}
-        <div className="border-t border-neutral-200/70">
+        {/* Tablo (desktop) */}
+        <div className="border-t border-neutral-200/70 hidden lg:block">
           <div className="overflow-x-auto bg-white px-4 lg:px-6">
             <table className="w-full table-fixed">
               <thead>
@@ -475,6 +475,76 @@ export default function CourierRatingsPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Kart görünümü (mobil) */}
+        <div className="border-t border-neutral-200/70 lg:hidden">
+          <div className="px-4 py-4 space-y-3">
+            {loadingCouriers && (
+              <div className="py-10 text-center text-sm text-neutral-500">Yükleniyor…</div>
+            )}
+
+            {!loadingCouriers && filtered.map((c) => (
+              <div key={c.id} className="rounded-xl border border-neutral-200/70 bg-white p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={c.avatar || '/icons/1.jpg'}
+                    alt={c.name}
+                    className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-neutral-900 truncate">{c.name}</div>
+                    <div className="text-xs text-neutral-500">{c.vehicle ?? '—'} · {c.phone ?? '—'}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <div>
+                    <RatingView value={c.avg ?? 0} />
+                    <span className="text-xs text-neutral-500 ml-1">({c.votes ?? 0})</span>
+                  </div>
+                  <div className="text-neutral-600 tabular-nums">{c.completed ?? 0} teslim</div>
+                </div>
+
+                {c.lastComment && (
+                  <div className="text-sm text-neutral-600 line-clamp-2">{c.lastComment}</div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => openRate(c)}
+                    className="rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-orange-600"
+                  >
+                    Puan Ver
+                  </button>
+                  <button
+                    onClick={() => openAssign(c)}
+                    className="rounded-lg bg-indigo-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-600"
+                  >
+                    Ata
+                  </button>
+                  <button
+                    onClick={() => openMyRatings(c)}
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700"
+                  >
+                    Puanlarım
+                  </button>
+                  <button
+                    onClick={() => openAllRatings(c)}
+                    className="rounded-lg bg-neutral-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-neutral-800"
+                  >
+                    Tüm Puanları
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {!loadingCouriers && filtered.length === 0 && (
+              <div className="py-12 text-center text-sm text-neutral-500">
+                {err || 'Kayıt bulunamadı.'}
+              </div>
+            )}
           </div>
         </div>
       </section>

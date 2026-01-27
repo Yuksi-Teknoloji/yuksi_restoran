@@ -447,10 +447,10 @@ export default function OrderHistoryPage() {
 
   return (
     <div className="space-y-6 overflow-x-hidden">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Sipariş Geçmişi</h1>
 
-        <div className="hidden md:flex items-center gap-2 text-sm text-neutral-500">
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
           <SortBtn
             active={sortKey === 'date'}
             asc={sortAsc}
@@ -472,11 +472,11 @@ export default function OrderHistoryPage() {
         </div>
       </div>
 
-      <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm soft-card overflow-hidden mx-[-16px] lg:mx-[-24px]">
+      <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm soft-card overflow-hidden">
         {/* Filtreler */}
         <div className="px-4 lg:px-6 py-4 sm:py-6">
-          <div className="grid grid-flow-col auto-cols-max items-end gap-3">
-            <div className="w-[260px] sm:w-[320px] shrink-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] items-end gap-3">
+            <div className="sm:col-span-2 lg:col-span-1">
               <label className="mb-1 block text-sm font-semibold text-neutral-700">
                 Kod / Müşteri / Telefon
               </label>
@@ -562,8 +562,8 @@ export default function OrderHistoryPage() {
           </div>
         </div>
 
-        {/* Tablo */}
-        <div className="border-t border-neutral-200/70">
+        {/* Tablo (desktop) */}
+        <div className="border-t border-neutral-200/70 hidden lg:block">
           <div className="overflow-x-auto bg-white px-4 lg:px-6">
             <table className="w-full table-fixed">
               <thead>
@@ -580,20 +580,14 @@ export default function OrderHistoryPage() {
               <tbody>
                 {loading && (
                   <tr>
-                    <td
-                      colSpan={7}
-                      className="px-6 py-12 text-center text-neutral-500"
-                    >
+                    <td colSpan={7} className="px-6 py-12 text-center text-neutral-500">
                       Yükleniyor…
                     </td>
                   </tr>
                 )}
                 {!loading && error && (
                   <tr>
-                    <td
-                      colSpan={7}
-                      className="px-6 py-12 whitespace-pre-wrap text-center text-rose-600"
-                    >
+                    <td colSpan={7} className="px-6 py-12 whitespace-pre-wrap text-center text-rose-600">
                       {error}
                     </td>
                   </tr>
@@ -610,18 +604,12 @@ export default function OrderHistoryPage() {
                       </td>
                       <td className="px-4 lg:px-4 py-3 font-medium">{r.code}</td>
                       <td className="px-4 lg:px-4 py-3">
-                        <div className="font-medium text-neutral-900">
-                          {r.customer}
-                        </div>
+                        <div className="font-medium text-neutral-900">{r.customer}</div>
                         <div className="text-xs text-neutral-500">{r.phone}</div>
-                        <div className="text-xs text-neutral-500 truncate max-w-[340px]">
-                          {r.address}
-                        </div>
+                        <div className="text-xs text-neutral-500 truncate max-w-[340px]">{r.address}</div>
                       </td>
                       <td className="px-4 lg:px-6 py-3">{r.type}</td>
-                      <td className="px-4 lg:px-6 py-3 font-semibold tabular-nums">
-                        {trCurrency(r.amount)}
-                      </td>
+                      <td className="px-4 lg:px-6 py-3 font-semibold tabular-nums">{trCurrency(r.amount)}</td>
                       <td className="px-4 lg:px-6 py-3">
                         <StatusPill status={r.status} />
                       </td>
@@ -645,10 +633,7 @@ export default function OrderHistoryPage() {
                   ))}
                 {!loading && !error && current.length === 0 && (
                   <tr>
-                    <td
-                      colSpan={7}
-                      className="px-6 py-12 text-center text-sm text-neutral-500"
-                    >
+                    <td colSpan={7} className="px-6 py-12 text-center text-sm text-neutral-500">
                       Kayıt bulunamadı.
                     </td>
                   </tr>
@@ -658,20 +643,76 @@ export default function OrderHistoryPage() {
               {!loading && !error && rows.length > 0 && (
                 <tfoot>
                   <tr className="border-t border-neutral-200/70">
-                    <td
-                      className="px-4 lg:px-6 py-3 text-sm text-neutral-600"
-                      colSpan={4}
-                    >
+                    <td className="px-4 lg:px-6 py-3 text-sm text-neutral-600" colSpan={4}>
                       Toplam {rows.length} sipariş
                     </td>
-                    <td className="px-4 lg:px-6 py-3 font-semibold">
-                      {trCurrency(total)}
-                    </td>
+                    <td className="px-4 lg:px-6 py-3 font-semibold">{trCurrency(total)}</td>
                     <td colSpan={2} />
                   </tr>
                 </tfoot>
               )}
             </table>
+          </div>
+        </div>
+
+        {/* Kart görünümü (mobil & tablet) */}
+        <div className="border-t border-neutral-200/70 lg:hidden">
+          <div className="px-4 py-4 space-y-3">
+            {loading && (
+              <div className="py-12 text-center text-neutral-500">Yükleniyor…</div>
+            )}
+            {!loading && error && (
+              <div className="py-12 whitespace-pre-wrap text-center text-rose-600">{error}</div>
+            )}
+            {!loading &&
+              !error &&
+              current.map((r) => (
+                <div key={r.id} className="rounded-xl border border-neutral-200/70 bg-white p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-medium text-neutral-900">{r.code}</div>
+                      <div className="text-xs text-neutral-500">{new Date(r.date).toLocaleString('tr-TR')}</div>
+                    </div>
+                    <StatusPill status={r.status} />
+                  </div>
+
+                  <div className="text-sm">
+                    <div className="font-medium">{r.customer}</div>
+                    <div className="text-xs text-neutral-500">{r.phone}</div>
+                    <div className="text-xs text-neutral-500 line-clamp-2">{r.address}</div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-neutral-500">{r.type}</span>
+                    <span className="font-semibold tabular-nums">{trCurrency(r.amount)}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => openDetail(r.id)}
+                      className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm hover:bg-neutral-50"
+                    >
+                      Detay
+                    </button>
+                    <button
+                      onClick={() => openUpdate(r.id)}
+                      className="rounded-lg bg-orange-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-orange-700"
+                    >
+                      Durumu Güncelle
+                    </button>
+                  </div>
+                </div>
+              ))}
+            {!loading && !error && current.length === 0 && (
+              <div className="py-12 text-center text-sm text-neutral-500">Kayıt bulunamadı.</div>
+            )}
+
+            {!loading && !error && rows.length > 0 && (
+              <div className="flex items-center justify-between rounded-xl bg-neutral-50 px-4 py-3 text-sm">
+                <span className="text-neutral-600">Toplam {rows.length} sipariş</span>
+                <span className="font-semibold">{trCurrency(total)}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -816,7 +857,7 @@ function OrderDetailModal({
       <div
         role="dialog"
         aria-modal="true"
-        className="absolute left-1/2 top-10 w-[min(920px,94vw)] -translate-x-1/2 rounded-2xl bg-white shadow-xl ring-1 ring-black/5 max-h-[90vh] overflow-y-auto"
+        className="absolute inset-x-2 top-4 sm:inset-x-auto sm:left-1/2 sm:top-10 sm:w-[min(920px,94vw)] sm:-translate-x-1/2 rounded-2xl bg-white shadow-xl ring-1 ring-black/5 max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <div>
@@ -994,8 +1035,8 @@ function OrderDetailModal({
 // küçük satır bileşeni
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[140px_1fr] gap-3">
-      <div className="text-neutral-500">{label}</div>
+    <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-1 sm:gap-3">
+      <div className="text-neutral-500 text-xs sm:text-sm">{label}</div>
       <div className="text-neutral-900">{children}</div>
     </div>
   );
@@ -1044,7 +1085,7 @@ function UpdateOrderModal({
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="absolute left-1/2 top-10 w-[min(760px,94vw)] -translate-x-1/2 rounded-2xl bg-white shadow-xl ring-1 ring-black/5 overflow-hidden">
+      <div className="absolute inset-x-2 top-4 sm:inset-x-auto sm:left-1/2 sm:top-10 sm:w-[min(760px,94vw)] sm:-translate-x-1/2 rounded-2xl bg-white shadow-xl ring-1 ring-black/5 overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <h3 className="text-lg font-semibold">Sipariş Durumu Güncelle (#{form.orderId})</h3>
           <button

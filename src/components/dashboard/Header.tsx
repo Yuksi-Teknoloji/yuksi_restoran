@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { type JwtClaims, decodeJwt } from "@/src/utils/jwt";
 import { getAuthToken } from "@/src/utils/auth";
 import Image from "next/image";
+import { Menu } from "lucide-react";
 
 const token = getAuthToken();
 const claims: JwtClaims | null = token ? (decodeJwt(token) as JwtClaims) : null;
@@ -32,11 +33,13 @@ export default function Header({
   titleClass = "",
   headerClass = "",
   userLabel = "Hesabım",
+  onSidebarToggle,
 }: {
   title: string;
   titleClass?: string;
   headerClass?: string;
   userLabel?: string;
+  onSidebarToggle?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -233,10 +236,23 @@ export default function Header({
         headerClass || "bg-white border-neutral-200 text-neutral-900",
       ].join(" ")}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <h1 className={["text-lg font-semibold", titleClass].join(" ")}>
-          {title}
-        </h1>
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {onSidebarToggle && (
+            <button
+              type="button"
+              onClick={onSidebarToggle}
+              className="shrink-0 flex items-center justify-center h-10 w-10 rounded-lg hover:bg-black/10 -ml-1"
+              title="Menü"
+              aria-label="Menüyü aç veya kapat"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          )}
+          <h1 className={["text-lg font-semibold truncate", titleClass].join(" ")}>
+            {title}
+          </h1>
+        </div>
 
         <div className="flex items-center gap-2">
           {/* Notifications */}

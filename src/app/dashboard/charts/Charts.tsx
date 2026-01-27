@@ -164,42 +164,46 @@ export default function Charts() {
   if (!dataWithRange || !data || !startDate || !endDate) return;
 
   return (
-    <div className="flex flex-wrap justify-between gap-15">
-      <div className="w-full max-w-[500px] h-[300px] bg-white rounded-md shadow">
-        <div className="flex justify-between">
+    <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:justify-between sm:gap-6">
+      {/* Sipariş Gelirleri — çizgi grafik */}
+      <div className="flex min-w-0 flex-col rounded-lg bg-white shadow sm:max-w-[500px] sm:flex-1">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-neutral-100 px-3 py-2 sm:px-4">
           <select
-            className="rounded border border-neutral-300 bg-white px-3 py-2 outline-none ring-2 ring-transparent transition focus:ring-sky-200"
+            className="rounded border border-neutral-300 bg-white px-2 py-1.5 text-sm outline-none ring-2 ring-transparent transition focus:ring-sky-200 sm:px-3 sm:py-2"
             name="option"
             value={option}
-            onChange={(e) => {
-              setOption(e.target.value);
-            }}
+            onChange={(e) => setOption(e.target.value)}
           >
             <option value="daily">Günlük</option>
             <option value="weekly">Haftalık</option>
             <option value="monthly">Aylık</option>
           </select>
-          <span>Sipariş Gelirleri</span>
-          <span className="bg-gray-100 p-1 rounded">
+          <span className="text-sm font-medium sm:text-base">Sipariş Gelirleri</span>
+          <span className="rounded bg-neutral-100 px-2 py-1 text-xs sm:px-2.5 sm:py-1 sm:text-sm">
             Toplam: {dataWithRange.total_amount} &#8378;
           </span>
         </div>
-
-        <ChartLine
-          startDate={startDate}
-          endDate={endDate}
-          option={option}
-          data={dataWithRange}
-        />
+        <div className="h-[220px] w-full sm:h-[260px]">
+          <ChartLine
+            startDate={startDate}
+            endDate={endDate}
+            option={option}
+            data={dataWithRange}
+          />
+        </div>
       </div>
-      <div className="w-full max-w-[500px] h-[300px] bg-white rounded-md shadow">
-        <span className="flex justify-between">
-          <span className=" p-1">Sipariş Durumu</span>
-          <span className="bg-gray-100 p-1 rounded">
+
+      {/* Sipariş Durumu — pasta grafik */}
+      <div className="flex min-w-0 flex-col rounded-lg bg-white shadow sm:max-w-[500px] sm:flex-1">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-neutral-100 px-3 py-2 sm:px-4">
+          <span className="text-sm font-medium sm:text-base">Sipariş Durumu</span>
+          <span className="rounded bg-neutral-100 px-2 py-1 text-xs sm:px-2.5 sm:py-1 sm:text-sm">
             Sipariş Sayısı: {data.length}
           </span>
-        </span>
-        <ChartPie data={data}/>
+        </div>
+        <div className="h-[220px] w-full sm:h-[260px]">
+          <ChartPie data={data} />
+        </div>
       </div>
     </div>
   );

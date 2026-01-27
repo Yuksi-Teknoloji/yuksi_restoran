@@ -320,19 +320,21 @@ export default function RestaurantJobsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Yük Listesi (Restaurant)</h1>
-        <div className="flex items-center gap-2">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+          Yük Listesi (Restaurant)
+        </h1>
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={load}
-            className="rounded-xl bg-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-300"
+            className="rounded-xl bg-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-300 sm:px-4"
           >
             Yenile
           </button>
           <Link
             href={`/dashboard/create-load`}
-            className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-orange-700"
+            className="rounded-xl bg-orange-600 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-orange-700 sm:px-4"
           >
             Yeni Yük
           </Link>
@@ -340,7 +342,7 @@ export default function RestaurantJobsPage() {
       </div>
 
       <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm">
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="space-y-2">
             <input
               value={query}
@@ -349,34 +351,99 @@ export default function RestaurantJobsPage() {
                 setPage(1);
               }}
               placeholder="Ara: id, araç tipi, adres, ödeme yöntemi…"
-              className="w-full rounded-xl border border-neutral-300 bg-neutral-100 px-3 py-2 text-neutral-800 outline-none ring-2 ring-transparent transition placeholder:text-neutral-400 focus:bg-white focus:ring-sky-200"
+              className="w-full rounded-xl border border-neutral-300 bg-neutral-100 px-3 py-2 text-base text-neutral-800 outline-none ring-2 ring-transparent transition placeholder:text-neutral-400 focus:bg-white focus:ring-sky-200"
             />
-            <p className="text-sm text-neutral-500">
+            <p className="text-xs text-neutral-500 sm:text-sm">
               Toplam {filtered.length} kayıt • Bu sayfada {pageRows.length} kayıt
               {query ? ` (filtre: “${query}”)` : ''}
             </p>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-t border-neutral-200/70">
+        {/* Mobil: kart listesi */}
+        <div className="space-y-3 border-t border-neutral-200/70 p-4 md:hidden">
+          {loading && (
+            <div className="py-8 text-center text-sm text-neutral-500">Yükleniyor…</div>
+          )}
+          {!loading && error && (
+            <div className="whitespace-pre-wrap py-6 text-center text-sm text-rose-600">{error}</div>
+          )}
+          {!loading && !error && pageRows.length === 0 && (
+            <div className="py-10 text-center text-sm text-neutral-500">Kayıt bulunamadı.</div>
+          )}
+          {!loading &&
+            !error &&
+            pageRows.map((r) => (
+              <article
+                key={r.id}
+                className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-sm"
+              >
+                <div className="space-y-3">
+                  <span className="block font-mono text-sm font-semibold text-neutral-900">{r.id}</span>
+                  <div className="text-neutral-900 text-xs">
+                    {r.deliveryType || '-'}
+                    {r.carrierType ? ` • ${r.carrierType}` : ''}
+                  </div>
+                  <div className="text-neutral-900 text-xs">{r.vehicleType || '-'}</div>
+                  <div className="text-neutral-900 text-xs">
+                    <div className="line-clamp-2">{r.pickupAddress || '-'}</div>
+                    <div className="text-neutral-500">→</div>
+                    <div className="line-clamp-2">{r.dropoffAddress || '-'}</div>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-600">
+                    <span>Randevu: {fmtAppt(r.deliveryDate, r.deliveryTime)}</span>
+                    <span>Ödeme: {r.paymentMethod || '-'}</span>
+                    <span className="tabular-nums">
+                      Tutar: {typeof r.totalPrice === 'number' ? r.totalPrice.toFixed(2) : '-'}
+                    </span>
+                    <span>Oluşturma: {r.createdAt || '-'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <button
+                      onClick={() => showRoute(r)}
+                      className="rounded-lg bg-sky-600 px-2 py-1.5 text-xs font-semibold text-white shadow hover:bg-sky-700"
+                    >
+                      Haritada Göster
+                    </button>
+                    <button
+                      onClick={() => setEditing(r)}
+                      className="rounded-lg bg-amber-500 px-2 py-1.5 text-xs font-semibold text-white shadow hover:bg-amber-600"
+                    >
+                      Düzenle
+                    </button>
+                    <button
+                      onClick={() => onDelete(r.id)}
+                      disabled={busyId === r.id}
+                      className="rounded-lg bg-rose-500 px-2 py-1.5 text-xs font-semibold text-white shadow hover:bg-rose-600 disabled:opacity-60"
+                    >
+                      {busyId === r.id ? 'Siliniyor…' : 'Sil'}
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+        </div>
+
+        {/* Masaüstü: tablo */}
+        <div className="overflow-x-auto [scrollbar-width:thin] hidden md:block">
+          <table className="min-w-[720px] border-t border-neutral-200/70">
             <thead>
-              <tr className="text-left text-sm text-neutral-500">
-                <th className="px-6 py-3 font-medium">ID</th>
-                <th className="px-6 py-3 font-medium">Teslimat</th>
-                <th className="px-6 py-3 font-medium">Araç</th>
-                <th className="px-6 py-3 font-medium">Adres (Alış → Bırakış)</th>
-                <th className="px-6 py-3 font-medium">Randevu</th>
-                <th className="px-6 py-3 font-medium">Ödeme</th>
-                <th className="px-6 py-3 font-medium">Tutar</th>
-                <th className="px-6 py-3 font-medium">Oluşturma</th>
-                <th className="px-6 py-3 font-medium w-[260px]"></th>
+              <tr className="text-left text-xs text-neutral-500 sm:text-sm">
+                <th className="px-2 py-2 font-medium sm:px-6 sm:py-3">ID</th>
+                <th className="px-2 py-2 font-medium sm:px-6 sm:py-3">Teslimat</th>
+                <th className="px-2 py-2 font-medium sm:px-6 sm:py-3">Araç</th>
+                <th className="px-2 py-2 font-medium sm:px-6 sm:py-3">Adres (Alış → Bırakış)</th>
+                <th className="px-2 py-2 font-medium sm:px-6 sm:py-3">Randevu</th>
+                <th className="px-2 py-2 font-medium sm:px-6 sm:py-3">Ödeme</th>
+                <th className="px-2 py-2 font-medium sm:px-6 sm:py-3">Tutar</th>
+                <th className="px-2 py-2 font-medium sm:px-6 sm:py-3">Oluşturma</th>
+                <th className="min-w-[200px] px-2 py-2 font-medium sm:min-w-[260px] sm:px-6 sm:py-3"></th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-neutral-500">
+                  <td colSpan={9} className="px-3 py-6 text-center text-neutral-500 sm:px-6 sm:py-8">
                     Yükleniyor…
                   </td>
                 </tr>
@@ -386,7 +453,7 @@ export default function RestaurantJobsPage() {
                 <tr>
                   <td
                     colSpan={9}
-                    className="px-6 py-8 whitespace-pre-wrap text-center text-rose-600"
+                    className="whitespace-pre-wrap px-3 py-6 text-center text-rose-600 sm:px-6 sm:py-8"
                   >
                     {error}
                   </td>
@@ -400,59 +467,59 @@ export default function RestaurantJobsPage() {
                     key={r.id}
                     className="border-t border-neutral-200/70 align-top hover:bg-neutral-50"
                   >
-                    <td className="px-3 py-4">
-                      <div className="font-mono text-sm text-neutral-900">{r.id}</div>
+                    <td className="px-2 py-3 sm:px-3 sm:py-4">
+                      <div className="font-mono text-xs text-neutral-900 sm:text-sm">{r.id}</div>
                     </td>
-                    <td className="px-3 py-4">
-                      <div className="text-neutral-900">
+                    <td className="px-2 py-3 sm:px-3 sm:py-4">
+                      <div className="text-neutral-900 text-xs sm:text-base">
                         {r.deliveryType || '-'}
                         {r.carrierType ? ` • ${r.carrierType}` : ''}
                       </div>
                     </td>
-                    <td className="px-3 py-4">
-                      <div className="text-neutral-900">{r.vehicleType || '-'}</div>
+                    <td className="px-2 py-3 sm:px-3 sm:py-4">
+                      <div className="text-neutral-900 text-xs sm:text-base">{r.vehicleType || '-'}</div>
                     </td>
-                    <td className="px-3 py-4">
-                      <div className="max-w-[480px] text-neutral-900">
+                    <td className="px-2 py-3 sm:px-3 sm:py-4">
+                      <div className="max-w-[180px] text-neutral-900 sm:max-w-[320px] md:max-w-[480px]">
                         <div className="line-clamp-2">{r.pickupAddress || '-'}</div>
                         <div className="text-neutral-500">→</div>
                         <div className="line-clamp-2">{r.dropoffAddress || '-'}</div>
                       </div>
                     </td>
-                    <td className="px-3 py-4">
-                      <div className="text-neutral-900">
+                    <td className="px-2 py-3 sm:px-3 sm:py-4">
+                      <div className="text-neutral-900 text-xs sm:text-base">
                         {fmtAppt(r.deliveryDate, r.deliveryTime)}
                       </div>
                     </td>
-                    <td className="px-3 py-4">
-                      <div className="text-neutral-900">{r.paymentMethod || '-'}</div>
+                    <td className="px-2 py-3 sm:px-3 sm:py-4">
+                      <div className="text-neutral-900 text-xs sm:text-base">{r.paymentMethod || '-'}</div>
                     </td>
-                    <td className="px-3 py-4">
-                      <div className="text-neutral-900 tabular-nums">
+                    <td className="px-2 py-3 sm:px-3 sm:py-4">
+                      <div className="tabular-nums text-neutral-900 text-xs sm:text-base">
                         {typeof r.totalPrice === 'number' ? r.totalPrice.toFixed(2) : '-'}
                       </div>
                     </td>
-                    <td className="px-3 py-4">
-                      <div className="text-neutral-900">{r.createdAt || '-'}</div>
+                    <td className="px-2 py-3 sm:px-3 sm:py-4">
+                      <div className="text-neutral-900 text-xs sm:text-base">{r.createdAt || '-'}</div>
                     </td>
-                    <td className="px-3 py-4">
-                      <div className="flex flex-wrap items-center justify-end gap-2">
+                    <td className="px-2 py-3 sm:px-3 sm:py-4">
+                      <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
                         <button
                           onClick={() => showRoute(r)}
-                          className="rounded-lg bg-sky-600 px-2 py-1.5 text-sm font-semibold text-white shadow hover:bg-sky-700"
+                          className="shrink-0 rounded-lg bg-sky-600 px-1.5 py-1 text-xs font-semibold text-white shadow hover:bg-sky-700 sm:px-2 sm:py-1.5 sm:text-sm"
                         >
                           Haritada Göster
                         </button>
                         <button
                           onClick={() => setEditing(r)}
-                          className="rounded-lg bg-amber-500 px-2 py-1.5 text-sm font-semibold text-white shadow hover:bg-amber-600"
+                          className="shrink-0 rounded-lg bg-amber-500 px-1.5 py-1 text-xs font-semibold text-white shadow hover:bg-amber-600 sm:px-2 sm:py-1.5 sm:text-sm"
                         >
                           Düzenle
                         </button>
                         <button
                           onClick={() => onDelete(r.id)}
                           disabled={busyId === r.id}
-                          className="rounded-lg bg-rose-500 px-2 py-1.5 text-sm font-semibold text-white shadow hover:bg-rose-600 disabled:opacity-60"
+                          className="shrink-0 rounded-lg bg-rose-500 px-1.5 py-1 text-xs font-semibold text-white shadow hover:bg-rose-600 disabled:opacity-60 sm:px-2 sm:py-1.5 sm:text-sm"
                         >
                           {busyId === r.id ? 'Siliniyor…' : 'Sil'}
                         </button>
@@ -465,7 +532,7 @@ export default function RestaurantJobsPage() {
                 <tr>
                   <td
                     colSpan={9}
-                    className="px-6 py-12 text-center text-sm text-neutral-500"
+                    className="px-3 py-8 text-center text-sm text-neutral-500 sm:px-6 sm:py-12"
                   >
                     Kayıt bulunamadı.
                   </td>
@@ -477,22 +544,22 @@ export default function RestaurantJobsPage() {
 
         {/* Client-side sayfalama */}
         {!loading && !error && totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 text-sm text-neutral-600">
-            <span>
+          <div className="flex flex-col gap-3 px-4 py-4 text-sm text-neutral-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <span className="text-center sm:text-left">
               Sayfa {page} / {totalPages}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex justify-center gap-2 sm:justify-end">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-lg border px-3 py-1.5 disabled:opacity-40"
+                className="rounded-lg border px-3 py-2 disabled:opacity-40 sm:py-1.5"
               >
                 ‹ Önceki
               </button>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="rounded-lg border px-3 py-1.5 disabled:opacity-40"
+                className="rounded-lg border px-3 py-2 disabled:opacity-40 sm:py-1.5"
               >
                 Sonraki ›
               </button>
@@ -501,46 +568,50 @@ export default function RestaurantJobsPage() {
         )}
       </section>
 
-      {/* Harita modalı */}
+      {/* Harita modalı — overlay kaydırılabilir */}
       {routeOpen && routeFor && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-2 sm:p-4"
           onClick={() => setRouteOpen(false)}
         >
-          <div
-            className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b px-5 py-4">
-              <h3 className="text-lg font-semibold">
-                Rota:{' '}
-                <span className="font-normal">{routeFor.pickupAddress || '-'}</span> ➜{' '}
-                <span className="font-normal">{routeFor.dropoffAddress || '-'}</span>
-              </h3>
-              <button
-                onClick={() => setRouteOpen(false)}
-                className="rounded-full p-2 hover:bg-neutral-100"
-              >
-                ✕
-              </button>
+          <div className="flex min-h-full items-center justify-center py-4">
+            <div
+              className="my-auto w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex shrink-0 flex-col gap-2 border-b px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
+                <h3 className="min-w-0 text-sm font-semibold sm:text-lg">
+                  Rota:{' '}
+                  <span className="line-clamp-2 font-normal">{routeFor.pickupAddress || '-'}</span> ➜{' '}
+                  <span className="line-clamp-2 font-normal">{routeFor.dropoffAddress || '-'}</span>
+                </h3>
+                <button
+                  onClick={() => setRouteOpen(false)}
+                  className="shrink-0 self-end rounded-full p-2 hover:bg-neutral-100 sm:self-center"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* İçerik alanı — kaydırılabilir */}
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                {routeErr && (
+                  <div className="mx-2 mt-2 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700 sm:m-4 sm:px-4 sm:py-3">
+                    {routeErr}
+                  </div>
+                )}
+                {routeLoading && (
+                  <div className="p-3 text-sm text-neutral-500 sm:p-4">Konumlar yükleniyor…</div>
+                )}
+                {!routeLoading && !routeErr && start && end && (
+                  <div className="p-2 sm:p-4">
+                    <div className="h-[240px] rounded-xl overflow-hidden sm:h-[360px] md:h-[420px]">
+                      <RouteMap start={start} end={end} />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-
-            {routeErr && (
-              <div className="m-4 rounded-md bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {routeErr}
-              </div>
-            )}
-            {routeLoading && (
-              <div className="p-4 text-sm text-neutral-500">Konumlar yükleniyor…</div>
-            )}
-
-            {!routeLoading && !routeErr && start && end && (
-              <div className="p-4">
-                <div style={{ height: 420 }} className="rounded-xl overflow-hidden">
-                  <RouteMap start={start} end={end} />
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -650,47 +721,46 @@ function EditJobModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-3 sm:p-4"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-3 sm:p-4"
       role="dialog"
       aria-modal="true"
     >
-      {/* daha küçük genişlik + yükseklik sınırı */}
-      <div className="w-full max-w-xl max-h-[85vh] overflow-hidden rounded-2xl bg-white shadow-xl grid grid-rows-[auto,1fr,auto]">
-        {/* header (sticky görünümü için ayrı satır) */}
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <h3 className="text-base sm:text-lg font-semibold">Yük Kaydını Düzenle</h3>
-          <button
-            className="rounded-full p-2 hover:bg-neutral-100"
-            onClick={onClose}
-            aria-label="Kapat"
-          >
-            ✕
-          </button>
-        </div>
+      <div className="flex min-h-full items-center justify-center py-4">
+        <div className="my-auto flex h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl sm:h-[85vh] sm:max-h-[85vh]">
+          <div className="flex shrink-0 items-center justify-between border-b px-3 py-2 sm:px-4 sm:py-3">
+            <h3 className="min-w-0 text-base font-semibold sm:text-lg">Yük Kaydını Düzenle</h3>
+            <button
+              className="shrink-0 rounded-full p-2 hover:bg-neutral-100"
+              onClick={onClose}
+              aria-label="Kapat"
+            >
+              ✕
+            </button>
+          </div>
 
-        {/* scrollable content */}
-        <form onSubmit={save} className="overflow-y-auto p-4 pb-28">
-          <div className="grid gap-4 sm:grid-cols-2 pb-28">
+          <form onSubmit={save} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
+              <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
             <Field label="Teslimat Tipi">
               <input
                 value={deliveryType}
                 onChange={(e) => setDeliveryType(e.target.value)}
                 placeholder="immediate / scheduled"
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
             <Field label="Carrier Type">
               <input
                 value={carrierType}
                 onChange={(e) => setCarrierType(e.target.value)}
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
             <Field label="Araç Tipi">
               <input
                 value={vehicleType}
                 onChange={(e) => setVehicleType(e.target.value)}
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
             <Field label="Ödeme Yöntemi">
@@ -698,7 +768,7 @@ function EditJobModal({
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
                 placeholder="cash / card …"
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
             <Field label="Toplam Tutar">
@@ -709,7 +779,7 @@ function EditJobModal({
                 onChange={(e) =>
                   setTotalPrice(e.target.value === '' ? '' : Number(e.target.value))
                 }
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
             <Field label="Ek Hizmetler Toplamı">
@@ -722,7 +792,7 @@ function EditJobModal({
                     e.target.value === '' ? '' : Number(e.target.value),
                   )
                 }
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
 
@@ -731,7 +801,7 @@ function EditJobModal({
                 rows={2}
                 value={pickupAddress}
                 onChange={(e) => setPickupAddress(e.target.value)}
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
             <Field label="Bırakış Adresi">
@@ -739,7 +809,7 @@ function EditJobModal({
                 rows={2}
                 value={dropoffAddress}
                 onChange={(e) => setDropoffAddress(e.target.value)}
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
 
@@ -747,7 +817,7 @@ function EditJobModal({
               <input
                 value={campaignCode}
                 onChange={(e) => setCampaignCode(e.target.value)}
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
             <Field label="Notlar">
@@ -755,7 +825,7 @@ function EditJobModal({
                 rows={2}
                 value={specialNotes}
                 onChange={(e) => setSpecialNotes(e.target.value)}
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
 
@@ -764,7 +834,7 @@ function EditJobModal({
                 value={imageIds}
                 onChange={(e) => setImageIds(e.target.value)}
                 placeholder="id1,id2,id3"
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
 
@@ -774,7 +844,7 @@ function EditJobModal({
                 type="date"
                 value={dDate}
                 onChange={(e) => setDDate(e.target.value)}
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
             <Field label="Teslim Saati">
@@ -782,7 +852,7 @@ function EditJobModal({
                 type="time"
                 value={dTime}
                 onChange={(e) => setDTime(e.target.value)}
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-base outline-none focus:ring-2 focus:ring-sky-200"
               />
             </Field>
 
@@ -797,27 +867,29 @@ function EditJobModal({
                 className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 font-mono text-sm outline-none focus:ring-2 focus:ring-sky-200"
               />
             </div>
-          </div>
-
-          {/* sticky footer buttons (form içinde ama alt satıra sabit) */}
-          <div className="sticky bottom-0 mt-4 -mx-4 border-t bg-white px-4 py-3">
-            <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-xl bg-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-300"
-              >
-                İptal
-              </button>
-              <button
-                type="submit"
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700"
-              >
-                Kaydet
-              </button>
+              </div>
             </div>
-          </div>
-        </form>
+
+            {/* footer — kaydırma alanının dışında, her zaman görünür */}
+            <div className="shrink-0 border-t bg-white px-3 py-2.5 sm:px-4 sm:py-3">
+              <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-xl bg-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-300 sm:px-4"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 sm:px-4"
+                >
+                  Kaydet
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -37,33 +37,37 @@ export function ChartPie({ data, title }: { data: Record<string, number>; title:
     }));
 
   return (
-    <div className="w-full max-w-[500px] h-[300px] bg-white rounded-md shadow">
-      <div className="flex justify-between">
-        <span className=" p-1">{title}</span>
-        <span className="bg-gray-100 p-1 rounded">Toplam: {data.total}</span>
+    <div className="flex min-w-0 flex-col overflow-hidden rounded-lg bg-white shadow sm:max-w-[500px]">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-neutral-100 px-3 py-2 sm:px-4">
+        <span className="text-sm font-medium sm:text-base">{title}</span>
+        <span className="rounded bg-neutral-100 px-2 py-1 text-xs sm:px-2.5 sm:py-1 sm:text-sm">
+          Toplam: {data.total}
+        </span>
       </div>
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={chart_data}
-            dataKey="value"
-            nameKey="name"
-            label={true}
-            innerRadius="50%"
-          >
-            {chart_data.map((_, i) => (
-              <Cell key={i} fill={COLORS[i % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(value, name) => [
-              value,
-              TypeTR[name as keyof typeof TypeTR] ?? name,
-            ]}
-          />
-          <Legend formatter={(name) => TypeTR[name as keyof typeof TypeTR] ?? name}></Legend>
-        </PieChart>
-      </ResponsiveContainer>
+      <div className="h-[220px] w-full sm:h-[260px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chart_data}
+              dataKey="value"
+              nameKey="name"
+              label={true}
+              innerRadius="50%"
+            >
+              {chart_data.map((_, i) => (
+                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(value, name) => [
+                value,
+                TypeTR[name as keyof typeof TypeTR] ?? name,
+              ]}
+            />
+            <Legend formatter={(name) => TypeTR[name as keyof typeof TypeTR] ?? name} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

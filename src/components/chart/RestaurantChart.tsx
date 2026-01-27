@@ -19,7 +19,6 @@ function getDays(s: string | number | Date, e: string | number | Date) {
   const arr = [];
   let d = new Date(s);
   while (d < new Date(e)) {
-    console.log(d);
     arr.push(d.toISOString().substring(0, 10));
     d.setDate(d.getDate() + 1);
   }
@@ -125,29 +124,27 @@ export function ChartPie({ data, title }: ChartPieProps) {
   }));
 
   return (
-    <div className="w-full max-w-[500px] h-[300px] bg-white rounded-md shadow">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={chart_data}
-            dataKey="value"
-            nameKey="name"
-            label={true}
-            innerRadius="50%"
-          >
-            {chart_data.map((_, i) => (
-              <Cell key={i} fill={COLORS[i % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(value, name) => [
-              value,
-              StatusTr[name as keyof typeof StatusTr] ?? name,
-            ]}
-          />
-          <Legend formatter={(name) => StatusTr[name as keyof typeof StatusTr] ?? name}></Legend>
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
+    <ResponsiveContainer width="100%" height="100%">
+      <PieChart>
+        <Pie
+          data={chart_data}
+          dataKey="value"
+          nameKey="name"
+          label={true}
+          innerRadius="50%"
+        >
+          {chart_data.map((_, i) => (
+            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip
+          formatter={(value, name) => [
+            value,
+            StatusTr[name as keyof typeof StatusTr] ?? name,
+          ]}
+        />
+        <Legend formatter={(name) => StatusTr[name as keyof typeof StatusTr] ?? name} />
+      </PieChart>
+    </ResponsiveContainer>
   );
 }

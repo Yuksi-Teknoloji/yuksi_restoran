@@ -156,7 +156,7 @@ export default function RestaurantSupportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Destek Talepleri</h1>
         <button
           className="rounded-xl bg-neutral-200 px-4 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-300"
@@ -169,7 +169,8 @@ export default function RestaurantSupportsPage() {
       <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm">
         {error && <div className="px-6 pt-4 text-sm text-rose-600">{error}</div>}
 
-        <div className="overflow-x-auto">
+        {/* Tablo (desktop) */}
+        <div className="overflow-x-auto hidden md:block">
           <table className="min-w-full border-t border-neutral-200/70">
             <thead>
               <tr className="text-left text-sm text-neutral-500">
@@ -192,7 +193,7 @@ export default function RestaurantSupportsPage() {
               {!loading && rows.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-6 py-10 text-center text-sm text-neutral-500">
-                    Henüz talep yok. Sağ üstten <strong>“Yeni Talep Oluştur”</strong>.
+                    Henüz talep yok. Sağ üstten <strong>&quot;Yeni Talep Oluştur&quot;</strong>.
                   </td>
                 </tr>
               )}
@@ -234,14 +235,64 @@ export default function RestaurantSupportsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Kart görünümü (mobil) */}
+        <div className="md:hidden px-4 py-4 space-y-3">
+          {loading && (
+            <div className="py-10 text-center text-sm text-neutral-500">Yükleniyor…</div>
+          )}
+
+          {!loading && rows.length === 0 && (
+            <div className="py-10 text-center text-sm text-neutral-500">
+              Henüz talep yok. <strong>&quot;Yeni Talep Oluştur&quot;</strong> butonunu kullanın.
+            </div>
+          )}
+
+          {!loading && rows.map(r => (
+            <div key={r.id} className="rounded-xl border border-neutral-200/70 p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-neutral-900">{r.subject}</div>
+                  <div className="mt-1 line-clamp-2 text-sm text-neutral-600">{r.message}</div>
+                </div>
+                <span className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadgeCls(r.status)}`}>
+                  {r.status}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-neutral-500">
+                <div>E-posta: <span className="text-neutral-700">{r.email}</span></div>
+                <div>Restoran: <span className="text-neutral-700">{r.restaurant}</span></div>
+                <div>Oluşturma: <span className="text-neutral-700">{r.createdAt}</span></div>
+                <div>Cevap: <span className="text-neutral-700">{r.repliedAt}</span></div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setDetail(r)}
+                  className="rounded-lg bg-sky-500 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-sky-600"
+                >
+                  Görüntüle
+                </button>
+                <button
+                  onClick={() => removeTicket(r.id)}
+                  disabled={deleting === r.id}
+                  className="rounded-lg bg-rose-500 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-rose-600 disabled:opacity-50"
+                >
+                  {deleting === r.id ? 'Siliniyor…' : 'Sil'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* Oluştur modalı */}
       {openCreate && (
-        <div className="fixed inset-0 z-50 grid place-items-start overflow-y-auto bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 grid place-items-start overflow-y-auto bg-black/50 p-2 sm:p-4">
           <div className="mx-auto w-full max-w-3xl rounded-2xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-5 py-4">
-              <h3 className="text-xl font-semibold">Yeni Talep</h3>
+            <div className="flex items-center justify-between border-b px-4 sm:px-5 py-4">
+              <h3 className="text-lg sm:text-xl font-semibold">Yeni Talep</h3>
               <button className="rounded-full p-2 hover:bg-neutral-100" onClick={() => setOpenCreate(false)} aria-label="Kapat">✕</button>
             </div>
 
@@ -290,11 +341,11 @@ export default function RestaurantSupportsPage() {
 
       {/* Detay modalı */}
       {detail && (
-        <div className="fixed inset-0 z-50 grid place-items-start overflow-y-auto bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 grid place-items-start overflow-y-auto bg-black/50 p-2 sm:p-4">
           <div className="mx-auto w-full max-w-3xl rounded-2xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-5 py-4">
-              <div>
-                <h3 className="text-xl font-semibold">{detail.subject}</h3>
+            <div className="flex items-center justify-between border-b px-4 sm:px-5 py-4">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg sm:text-xl font-semibold truncate">{detail.subject}</h3>
                 <div className="mt-1 text-xs text-neutral-500">{detail.email} • {detail.restaurant}</div>
               </div>
               <button className="rounded-full p-2 hover:bg-neutral-100" onClick={() => setDetail(null)} aria-label="Kapat">✕</button>

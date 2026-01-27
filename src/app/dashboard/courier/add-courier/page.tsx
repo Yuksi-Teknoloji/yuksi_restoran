@@ -330,7 +330,8 @@ export default function AssignCourierToRestaurantPage() {
           <div className="font-semibold">Restorana Atanmış Kuryeler</div>
           {assignmentsLoading && <span className="text-xs text-neutral-500">Yükleniyor…</span>}
         </div>
-        <div className="max-h-[420px] overflow-auto">
+        {/* Tablo (desktop) */}
+        <div className="max-h-[420px] overflow-auto hidden sm:block">
           <table className="min-w-full">
             <thead>
               <tr className="text-left text-xs text-neutral-500">
@@ -370,6 +371,39 @@ export default function AssignCourierToRestaurantPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Kart görünümü (mobil) */}
+        <div className="sm:hidden max-h-[420px] overflow-auto px-4 py-3 space-y-3">
+          {assignments.map(a => {
+            const name = [a.courier.first_name, a.courier.last_name].filter(Boolean).join(' ') || a.courier.id;
+            return (
+              <div key={a.assignment_id} className="rounded-xl border border-neutral-200/70 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="font-medium text-sm text-neutral-900">{name}</div>
+                  <button
+                    onClick={() => removeAssignment(a.assignment_id)}
+                    className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                    title="Atamayı kaldır"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Kaldır
+                  </button>
+                </div>
+                <div className="text-xs text-neutral-500">
+                  Tel: {a.courier.phone ?? '—'}
+                </div>
+                {a.notes && (
+                  <div className="text-xs text-neutral-600">Not: {a.notes}</div>
+                )}
+              </div>
+            );
+          })}
+          {assignments.length === 0 && !assignmentsLoading && (
+            <div className="py-6 text-center text-sm text-neutral-500">
+              Atanmış kurye yok.
+            </div>
+          )}
         </div>
         {assignmentsError && (
           <div className="m-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">

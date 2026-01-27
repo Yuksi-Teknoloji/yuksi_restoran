@@ -147,8 +147,13 @@ export default function FollowLivePage() {
   const [selectedStatus, setSelectedStatus] =
     React.useState<OrderStatus>("hazirlaniyor");
   const [maximizeMap, setMaximizeMap] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
 
   const sectionRef = React.useRef<HTMLElement>(null);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const headers = React.useMemo<HeadersInit>(() => {
     const h: HeadersInit = { Accept: "application/json" };
@@ -291,15 +296,19 @@ export default function FollowLivePage() {
 
   /* =================== UI =================== */
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Üst bar */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Canlı Takip</h1>
-        <div className="flex items-end gap-2">
-          <div className="text-sm text-neutral-500">
-            {restaurantId ? (
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+          Canlı Takip
+        </h1>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <div className="text-xs text-neutral-500 min-w-0 sm:text-sm">
+            {!mounted ? (
+              "—"
+            ) : restaurantId ? (
               <>
-                Restoran: <b>{restaurantId}</b>
+                Restoran: <b className="truncate">{restaurantId}</b>
               </>
             ) : (
               "Restoran kimliği bulunamadı"
@@ -307,12 +316,14 @@ export default function FollowLivePage() {
           </div>
           <button
             onClick={() => loadOrders(selectedStatus)}
-            disabled={loading || !restaurantId}
-            className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm hover:bg-neutral-50 disabled:opacity-60"
+            disabled={loading || !mounted || !restaurantId}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm hover:bg-neutral-50 disabled:opacity-60 sm:w-auto"
             title="Yenile"
           >
-            <RefreshCcw className="h-4 w-4" />
-            {loading ? "Yükleniyor…" : "Siparişleri Yenile"}
+            <RefreshCcw className="h-4 w-4 shrink-0" />
+            <span className="truncate">
+              {loading ? "Yükleniyor…" : "Siparişleri Yenile"}
+            </span>
           </button>
         </div>
       </div>
@@ -320,33 +331,35 @@ export default function FollowLivePage() {
       {/* Harita + sağ panel */}
       <section
         ref={sectionRef}
-        className={"rounded-xl border border-neutral-200/70 bg-white shadow-sm"}
+        className="overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-sm"
       >
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px]">
           {/* Sol: Harita */}
-          <div className="relative h-max">
+          <div className="relative h-max min-h-0">
             <LiveLeaflet
               markers={markers}
               selectedId={sel?.id ?? null}
               onSelect={(id) => setSelectedOrderId(id)}
               className={`w-full ${
-                maximizeMap ? "h-screen" : "h-96 lg:h-[500px]"
+                maximizeMap
+                  ? "h-screen"
+                  : "h-[280px] sm:h-80 md:h-96 lg:h-[500px]"
               } rounded-t-xl lg:rounded-t-none lg:rounded-l-xl`}
               overlay={
                 <>
                   {/* Sağ dikey buton grubu */}
-                  <div className="pointer-events-auto absolute right-3 top-3 z-10 flex flex-col gap-2">
+                  <div className="pointer-events-auto absolute right-2 top-2 z-10 flex flex-col gap-1.5 sm:right-3 sm:top-3 sm:gap-2">
                     <button
                       title="Menü"
-                      className="grid h-10 w-10 place-items-center rounded-md bg-emerald-600 text-white shadow cursor-pointer"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-emerald-600 text-white shadow sm:h-10 sm:w-10"
                     >
-                      <Menu className="h-5 w-5" />
+                      <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
                     <button
                       title="Düzenle"
-                      className="grid h-10 w-10 place-items-center rounded-md bg-amber-500 text-white shadow cursor-pointer"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-amber-500 text-white shadow sm:h-10 sm:w-10"
                     >
-                      <Pencil className="h-5 w-5" />
+                      <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
                     <button
                       onClick={() => {
@@ -358,31 +371,31 @@ export default function FollowLivePage() {
                         setMaximizeMap(!maximizeMap);
                       }}
                       title={maximizeMap ? "Küçült" : "Tam Ekran"}
-                      className="grid cursor-pointer h-10 w-10 place-items-center rounded-md bg-neutral-700 text-white shadow"
+                      className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-md bg-neutral-700 text-white shadow sm:h-10 sm:w-10"
                     >
                       {maximizeMap ? (
-                        <Minimize2 className="h-5 w-5" />
+                        <Minimize2 className="h-4 w-4 sm:h-5 sm:w-5" />
                       ) : (
-                        <Maximize2 className="h-5 w-5" />
+                        <Maximize2 className="h-4 w-4 sm:h-5 sm:w-5" />
                       )}
                     </button>
-                    <div className="grid h-10 min-w-10 place-items-center rounded-md bg-neutral-900 px-2 text-white shadow">
-                      <span className="tabular-nums text-sm">
+                    <div className="grid h-9 min-w-9 shrink-0 place-items-center rounded-md bg-neutral-900 px-2 text-white shadow sm:h-10 sm:min-w-10">
+                      <span className="tabular-nums text-xs sm:text-sm">
                         {filtered.length}
                       </span>
                     </div>
                   </div>
 
-                  {/* Sağ alt: rozetler */}
-                  <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2">
+                  {/* Sağ alt: rozet (mobilde gizli, sayı zaten üstte) */}
+                  <div className="pointer-events-none absolute bottom-3 right-3 z-10 hidden flex-col items-end gap-2 sm:flex">
                     <div className="pointer-events-auto rounded-md bg-neutral-900/90 px-3 py-1.5 text-xs font-semibold text-white">
                       Listelenen Paket Sayısı: {filtered.length}
                     </div>
                   </div>
 
-                  {/* Alt: durumlara göre butonlar (status filter) */}
-                  <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-10 my-10">
-                    <div className="mx-2 mb-2 grid grid-cols-3 gap-2 text-sm font-medium">
+                  {/* Alt: durum sekmeleri – mobilde yatay scroll, masaüstünde grid */}
+                  <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-10 mb-2 mt-4 md:my-10">
+                    <div className="mx-2 flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:thin] md:grid md:grid-cols-3 md:overflow-visible md:pb-0">
                       {STATUS_TABS.map((t) => (
                         <Tab
                           key={t.key}
@@ -399,31 +412,31 @@ export default function FollowLivePage() {
             />
           </div>
           {/* Sağ: detay paneli */}
-          <aside className="border-t lg:border-t-0 lg:border-l border-neutral-200/70 bg-white p-4 lg:p-6">
+          <aside className="min-h-0 border-t border-neutral-200/70 bg-white p-4 lg:border-t-0 lg:border-l lg:p-6">
             {!sel ? (
-              <div className="grid h-full place-items-center text-sm text-neutral-500">
+              <div className="grid min-h-[120px] place-items-center text-sm text-neutral-500 sm:min-h-[160px]">
                 Haritada gösterilecek sipariş yok.
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="text-lg font-semibold">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-base font-semibold sm:text-lg">
                       #{sel.code || sel.id.slice(0, 8)}
                     </div>
-                    <div className="text-sm text-neutral-600">
+                    <div className="truncate text-sm text-neutral-600">
                       {sel.customer || "Müşteri"}
                     </div>
                     <div className="mt-1 text-xs text-neutral-500">
                       Durum: {statusReadable(sel.status)}
                     </div>
                   </div>
-                  <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white bg-sky-600">
+                  <span className="shrink-0 inline-flex items-center rounded-full bg-sky-600 px-2.5 py-1 text-xs font-semibold text-white">
                     Paket
                   </span>
                 </div>
 
-                <div className="rounded-xl border border-neutral-200 p-3 space-y-2 text-sm">
+                <div className="space-y-2 rounded-xl border border-neutral-200 p-3 text-sm">
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-neutral-500" />
                     {sel.phone ? (
@@ -456,17 +469,19 @@ export default function FollowLivePage() {
                 </div>
 
                 <div className="space-y-2 text-sm">
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-xs font-semibold text-neutral-500">
                       Restoran Adresi
                     </div>
-                    <div className="text-neutral-800">{sel.address || "—"}</div>
+                    <div className="text-neutral-800 break-words">
+                      {sel.address || "—"}
+                    </div>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-xs font-semibold text-neutral-500">
                       Teslimat Adresi
                     </div>
-                    <div className="text-neutral-800">
+                    <div className="text-neutral-800 break-words">
                       {sel.delivery_address || "—"}
                     </div>
                   </div>
@@ -478,38 +493,36 @@ export default function FollowLivePage() {
       </section>
 
       <section className="rounded-xl border border-neutral-200/70 bg-white shadow-sm">
-        {/* Alt yatay sipariş listesi */}
-        {/* Tam ekran için sipariş listesini ayırdım */}
-        <div className="overflow-x-auto">
-          <div className="flex flex-wrap gap-3 px-4 py-3">
-            {/* görüntü bozulmasın diye wrap */}
+        {/* Alt sipariş listesi: mobilde yatay scroll, md+ wrap */}
+        <div className="overflow-x-auto md:overflow-visible [scrollbar-width:thin]">
+          <div className="flex flex-nowrap gap-3 px-4 py-3 md:flex-wrap">
             {filtered.map((o) => {
               const active = sel?.id === o.id;
               return (
                 <button
                   key={o.id}
                   onClick={() => setSelectedOrderId(o.id)}
-                  className={`w-[150px] flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition ${
+                  className={`flex min-w-[140px] shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-left transition sm:min-w-0 sm:gap-3 md:w-[150px] ${
                     active
                       ? "border-orange-300 bg-orange-50"
                       : "border-neutral-200 bg-white hover:bg-neutral-50"
                   }`}
                 >
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  <div className="flex-1">
-                    <div className="text-sm font-semibold text-neutral-900">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-neutral-900">
                       #{o.code || o.id.slice(0, 8)}
                     </div>
-                    <div className="text-xs text-neutral-500">
+                    <div className="truncate text-xs text-neutral-500">
                       {o.customer || "Müşteri"} • {statusReadable(o.status)}
                     </div>
                   </div>
-                  <MapPin className="h-4 w-4 text-neutral-400" />
+                  <MapPin className="h-4 w-4 shrink-0 text-neutral-400" />
                 </button>
               );
             })}
             {filtered.length === 0 && (
-              <div className="px-4 py-2 text-sm text-neutral-500">
+              <div className="w-full px-4 py-2 text-sm text-neutral-500">
                 Bu durum için sipariş bulunamadı.
               </div>
             )}
@@ -519,9 +532,9 @@ export default function FollowLivePage() {
 
       {/* Alt filtre (arama) */}
       <section className="rounded-xl border border-neutral-200/70 bg-white shadow-sm">
-        <div className="px-4 lg:px-6 py-4 sm:py-6 space-y-3">
-          <div className="grid items-end gap-3 md:grid-cols-[minmax(220px,1fr)_auto]">
-            <div>
+        <div className="space-y-3 px-4 py-4 sm:py-5 lg:px-6 lg:py-6">
+          <div className="grid items-end gap-3 md:grid-cols-[minmax(200px,1fr)_auto]">
+            <div className="min-w-0">
               <label className="mb-1 block text-sm font-semibold text-neutral-700">
                 Sipariş Kodu / Müşteri / Telefon
               </label>
@@ -530,14 +543,14 @@ export default function FollowLivePage() {
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Ara…"
-                  className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 pl-9 outline-none ring-2 ring-transparent transition focus:ring-sky-200"
+                  className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 pl-9 text-base outline-none ring-2 ring-transparent transition focus:ring-sky-200"
                 />
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
               </div>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-start sm:justify-end">
               <span className="inline-flex items-center gap-2 rounded-xl bg-orange-50 px-3 py-2 text-sm text-orange-700">
-                Gösterilen Paket: <strong>{filtered.length}</strong>
+                Gösterilen: <strong>{filtered.length}</strong>
               </span>
             </div>
           </div>
@@ -587,11 +600,11 @@ function Tab({
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-white shadow text-xs sm:text-sm ${
+      className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-white shadow text-xs sm:gap-2 sm:px-3 sm:py-2 sm:text-sm ${
         colors[color]
       } ${active ? "ring-2 ring-white/90 scale-[1.02]" : ""}`}
     >
-      <span className="text-sm leading-none">●</span>
+      <span className="text-xs leading-none sm:text-sm">●</span>
       <span className="font-semibold">{label}</span>
     </button>
   );

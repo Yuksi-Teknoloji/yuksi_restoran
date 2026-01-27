@@ -57,12 +57,12 @@ export default function RestaurantInvoicesPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Restoran Faturaları</h1>
       </div>
 
-      <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm soft-card overflow-hidden mx-[-16px] lg:mx-[-24px]">
+      <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm soft-card overflow-hidden">
         {/* Filters */}
         <div className="px-4 lg:px-6 py-4 sm:py-6">
-          <div className="grid items-end gap-4 md:grid-cols-[minmax(240px,1fr)_180px_150px_150px]">
+          <div className="grid items-end gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-[minmax(240px,1fr)_180px_150px_150px]">
             {/* Search */}
-            <div className="max-w-[320px]">
+            <div className="sm:col-span-2 md:col-span-1">
               <label className="mb-1 block text-sm font-semibold text-neutral-700">
                 Fatura No / Restoran
               </label>
@@ -76,11 +76,11 @@ export default function RestaurantInvoicesPage() {
 
             {/* Status */}
             <div>
-              <label className="-ml-2 md:-ml-4 mb-1 block text-sm font-semibold text-neutral-700">Durum</label>
+              <label className="mb-1 block text-sm font-semibold text-neutral-700">Durum</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as InvoiceStatus | '')}
-                className="-ml-2 md:-ml-4 mb-1 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none ring-2 ring-transparent transition focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none ring-2 ring-transparent transition focus:ring-sky-200"
               >
                 <option value="">Tümü</option>
                 <option>Ödendi</option>
@@ -91,31 +91,31 @@ export default function RestaurantInvoicesPage() {
 
             {/* Start */}
             <div>
-              <label className=" -ml-2 md:-ml-4 mb-1 block text-sm font-semibold text-neutral-700">Başlangıç</label>
+              <label className="mb-1 block text-sm font-semibold text-neutral-700">Başlangıç</label>
               <input
                 type="date"
                 value={start}
                 onChange={(e) => setStart(e.target.value)}
-                className=" -ml-2 md:-ml-4 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none ring-2 ring-transparent transition focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none ring-2 ring-transparent transition focus:ring-sky-200"
               />
             </div>
 
             {/* End */}
             <div>
-              <label className="-ml-2 md:-ml-4 mb-1 block text-sm font-semibold text-neutral-700">Bitiş</label>
+              <label className="mb-1 block text-sm font-semibold text-neutral-700">Bitiş</label>
               <input
                 type="date"
                 value={end}
                 onChange={(e) => setEnd(e.target.value)}
-                className="-ml-2 md:-ml-4 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none ring-2 ring-transparent transition focus:ring-sky-200"
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none ring-2 ring-transparent transition focus:ring-sky-200"
               />
             </div>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="border-t border-neutral-200/70">
-          <div className="overflow-x-auto bg-white px-4 lg:px-9">
+        {/* Tablo (desktop) */}
+        <div className="border-t border-neutral-200/70 hidden sm:block">
+          <div className="overflow-x-auto bg-white px-4 lg:px-6">
             <table className="w-full table-fixed">
               <thead>
                 <tr className="text-left text-sm text-neutral-500">
@@ -134,10 +134,10 @@ export default function RestaurantInvoicesPage() {
                     <td className="px-4 lg:px-6 py-3">{r.restaurant}</td>
                     <td className="px-4 lg:px-6 py-3">{new Date(r.date).toLocaleDateString('tr-TR')}</td>
                     <td className="px-4 lg:px-6 py-3 font-semibold">{formatCurrency(r.amount)}</td>
-                    <td className="px-3 lg:px-4 py-2">
+                    <td className="px-4 lg:px-6 py-3">
                       <StatusPill status={r.status} />
                     </td>
-                    <td className="px-3 lg:px-2 py-3">
+                    <td className="px-4 lg:px-6 py-3">
                       <div className="flex items-center gap-2">
                         <button
                           className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm hover:bg-neutral-50"
@@ -165,7 +165,6 @@ export default function RestaurantInvoicesPage() {
                 )}
               </tbody>
 
-              {/* Summary row */}
               {filtered.length > 0 && (
                 <tfoot>
                   <tr className="border-t border-neutral-200/70">
@@ -178,6 +177,54 @@ export default function RestaurantInvoicesPage() {
                 </tfoot>
               )}
             </table>
+          </div>
+        </div>
+
+        {/* Kart görünümü (mobil) */}
+        <div className="border-t border-neutral-200/70 sm:hidden">
+          <div className="px-4 py-4 space-y-3">
+            {filtered.map((r) => (
+              <div key={r.id} className="rounded-xl border border-neutral-200/70 bg-white p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-medium text-neutral-900">{r.invoiceNo}</div>
+                    <div className="text-xs text-neutral-500">{r.restaurant}</div>
+                  </div>
+                  <StatusPill status={r.status} />
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-500">{new Date(r.date).toLocaleDateString('tr-TR')}</span>
+                  <span className="font-semibold">{formatCurrency(r.amount)}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm hover:bg-neutral-50"
+                    onClick={() => alert(`Fatura görüntüle: ${r.invoiceNo}`)}
+                  >
+                    Görüntüle
+                  </button>
+                  <button
+                    className="rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-orange-600"
+                    onClick={() => alert(`PDF indir: ${r.invoiceNo}`)}
+                  >
+                    İndir
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {filtered.length === 0 && (
+              <div className="py-12 text-center text-sm text-neutral-500">Kayıt bulunamadı.</div>
+            )}
+
+            {filtered.length > 0 && (
+              <div className="flex items-center justify-between rounded-xl bg-neutral-50 px-4 py-3 text-sm">
+                <span className="text-neutral-600">Toplam {filtered.length} fatura</span>
+                <span className="font-semibold">{formatCurrency(total)}</span>
+              </div>
+            )}
           </div>
         </div>
       </section>

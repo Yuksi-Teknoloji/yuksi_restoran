@@ -267,7 +267,8 @@ export default function RestaurantNotificationsPage() {
 
       {/* Table */}
       <section className="rounded-2xl border border-neutral-200/70 bg-white shadow-sm">
-        <div className="overflow-x-auto">
+        {/* Tablo (desktop) */}
+        <div className="overflow-x-auto hidden md:block">
           <table className="min-w-full border-t border-neutral-200/70">
             <thead>
               <tr className="text-left text-sm text-neutral-500">
@@ -341,49 +342,109 @@ export default function RestaurantNotificationsPage() {
                 </tr>
               ))}
             </tbody>
-
-            {!loading && !error && paged.length > 0 && (
-              <tfoot>
-                <tr>
-                  <td colSpan={6} className="border-t border-neutral-200/70">
-                    <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-2">
-                        {/* “Seçilileri Okundu Yap” KALDIRILDI */}
-                        <button
-                          onClick={() => deleteIds(Array.from(selectedIds))}
-                          disabled={selectedIds.size === 0}
-                          className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-rose-600 disabled:opacity-50"
-                        >
-                          Seçilileri Sil
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setPage(p => Math.max(1, p - 1))}
-                          disabled={page === 1}
-                          className="rounded-lg bg-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-800 hover:bg-neutral-300 disabled:opacity-50"
-                        >
-                          Önceki
-                        </button>
-                        <span className="text-sm text-neutral-700">
-                          Sayfa <strong>{page}</strong> / {pageCount}
-                        </span>
-                        <button
-                          onClick={() => setPage(p => Math.min(pageCount, p + 1))}
-                          disabled={page === pageCount}
-                          className="rounded-lg bg-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-800 hover:bg-neutral-300 disabled:opacity-50"
-                        >
-                          Sonraki
-                        </button>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              </tfoot>
-            )}
           </table>
         </div>
+
+        {/* Kart görünümü (mobil) */}
+        <div className="md:hidden border-t border-neutral-200/70">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100">
+            <input
+              type="checkbox"
+              aria-label="Sayfadaki tümünü seç"
+              checked={paged.length > 0 && paged.every(n => selectedIds.has(n.id))}
+              onChange={() => toggleSelectAll(paged.map(n => n.id))}
+            />
+            <span className="text-xs text-neutral-500">Tümünü seç</span>
+          </div>
+
+          <div className="px-4 py-3 space-y-3">
+            {loading && (
+              <div className="py-10 text-center text-neutral-500">Yükleniyor…</div>
+            )}
+
+            {!loading && !error && paged.length === 0 && (
+              <div className="py-10 text-center text-neutral-500">Kayıt yok.</div>
+            )}
+
+            {!loading && !error && paged.map((n) => (
+              <div key={n.id} className="rounded-xl border border-neutral-200/70 p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    aria-label="Seç"
+                    checked={selectedIds.has(n.id)}
+                    onChange={() => toggleSelect(n.id)}
+                    className="mt-1 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="font-semibold text-neutral-900">{n.title}</div>
+                      <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClasses(n.status)}`}>
+                        {n.status === 'unread' ? 'Okunmadı' : 'Okundu'}
+                      </span>
+                    </div>
+                    <div className="line-clamp-2 text-sm text-neutral-600">{stripHtml(n.bodyHtml)}</div>
+                    <div className="flex items-center justify-between text-xs text-neutral-500">
+                      <span>{typeLabel(n.type)}</span>
+                      <span>{fmtDate(n.createdAt)}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setDetail(n)}
+                        className="rounded-lg bg-sky-500 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-sky-600"
+                      >
+                        Görüntüle
+                      </button>
+                      <button
+                        onClick={() => deleteIds([n.id])}
+                        className="rounded-lg bg-rose-500 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-rose-600"
+                      >
+                        Sil
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer: Seçilileri Sil + Sayfalama */}
+        {!loading && !error && paged.length > 0 && (
+          <div className="border-t border-neutral-200/70">
+            <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => deleteIds(Array.from(selectedIds))}
+                  disabled={selectedIds.size === 0}
+                  className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-rose-600 disabled:opacity-50"
+                >
+                  Seçilileri Sil
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="rounded-lg bg-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-800 hover:bg-neutral-300 disabled:opacity-50"
+                >
+                  Önceki
+                </button>
+                <span className="text-sm text-neutral-700">
+                  Sayfa <strong>{page}</strong> / {pageCount}
+                </span>
+                <button
+                  onClick={() => setPage(p => Math.min(pageCount, p + 1))}
+                  disabled={page === pageCount}
+                  className="rounded-lg bg-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-800 hover:bg-neutral-300 disabled:opacity-50"
+                >
+                  Sonraki
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {detail && (
@@ -410,10 +471,10 @@ function DetailDrawer({
 }) {
   return (
     <div className="fixed inset-0 z-50 grid bg-black/40">
-      <div className="ml-auto h-full w-full max-w-xl bg-white shadow-2xl animate-in slide-in-from-right">
-        <div className="flex items-center justify-between border-b px-5 py-4">
-          <div>
-            <h3 className="text-lg font-semibold">{item.title}</h3>
+      <div className="ml-auto h-full w-full max-w-xl bg-white shadow-2xl animate-in slide-in-from-right overflow-y-auto">
+        <div className="flex items-center justify-between border-b px-4 sm:px-5 py-4">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base sm:text-lg font-semibold truncate">{item.title}</h3>
             <div className="mt-1 text-xs text-neutral-500">{fmtDate(item.createdAt)}</div>
           </div>
           <button onClick={onClose} aria-label="Kapat" className="rounded-full p-2 hover:bg-neutral-100">✕</button>
